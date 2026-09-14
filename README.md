@@ -48,7 +48,7 @@ Copy `.env.example` to `.env.local`. `.env.local` is gitignored and must never b
 
 | Variable | Purpose |
 |---|---|
-| `NEXT_PUBLIC_API_URL` | Base URL of the API. Default `http://localhost:4000`. Public — it reaches the browser. |
+| `NEXT_PUBLIC_API_URL` | Base URL of the API. Default `http://localhost:4000`. Public — it reaches the browser. Also feeds `images.remotePatterns`, so uploaded images render. Keep it identical to `PUBLIC_API_URL` in the API repo. |
 | `NEXT_PUBLIC_SITE_URL` | This site's own public URL. Used for canonical URLs, `sitemap.ts` and `robots.ts`. |
 | `REVALIDATE_SECRET` | Shared secret for the webhook the API calls. Must match the value in `lekker-tours-api`. **Server-only** — never prefix it with `NEXT_PUBLIC_`. |
 
@@ -155,3 +155,17 @@ The logo is the one supplied in the original project folder.
   hostname — CORS and the revalidation webhook both depend on that pair.
 - Set `NEXT_PUBLIC_SITE_URL` so canonical URLs, the sitemap and robots.txt are correct.
 - Keep `REVALIDATE_SECRET` identical on both sides.
+
+### Images from the API
+
+Admin-uploaded media is served by the API, not from this repo, so `<Image>` needs that hostname in
+`images.remotePatterns`. [next.config.ts](next.config.ts) derives it from `NEXT_PUBLIC_API_URL`
+rather than hardcoding it, keeping the localhost entries for development. If uploaded images render
+in dev but break in production, that pairing is the first thing to check.
+
+## Continuous integration
+
+[.github/workflows/ci.yml](.github/workflows/ci.yml) runs on push and PR: `npm ci`, `npm run lint`,
+`tsc --noEmit`, then `npm run build`. The build deliberately runs **without** an API available —
+public pages use `apiGetSafe` / `apiListSafe` and must degrade to an empty state rather than fail,
+so a green build also proves that fallback still works.

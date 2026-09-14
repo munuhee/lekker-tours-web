@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run lint
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      # The build must pass without a running API: public pages use
+      # apiGetSafe/apiListSafe and are expected to fall back to empty state.
+      - name: Build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:4000
+          NEXT_PUBLIC_SITE_URL: http://localhost:3000
+        run: npm run build
