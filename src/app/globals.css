@@ -1,0 +1,140 @@
+@import 'tailwindcss';
+
+/*
+ * Brand tokens derived from the Lekker Tours logo:
+ * deep forest green canopy, sunset amber sun, warm sand plains, maroon script.
+ */
+@theme {
+  /* Extra-small breakpoint for narrow phones, below Tailwind's 640px sm. */
+  --breakpoint-xs: 26rem;
+
+  --color-forest-50: #f2f7f3;
+  --color-forest-100: #dfece3;
+  --color-forest-200: #bfd9c8;
+  --color-forest-300: #8fbca1;
+  --color-forest-400: #5c9a73;
+  --color-forest-500: #2c6b41;
+  --color-forest-600: #235737;
+  --color-forest-700: #1b4526;
+  --color-forest-800: #173b21;
+  --color-forest-900: #14351f;
+  --color-forest-950: #0b1f12;
+
+  --color-amber-50: #fffaf0;
+  --color-amber-100: #fef0d4;
+  --color-amber-200: #fddfa6;
+  --color-amber-300: #fbcb70;
+  --color-amber-400: #ffc04d;
+  --color-amber-500: #f5a623;
+  --color-amber-600: #d8860b;
+  --color-amber-700: #a96608;
+
+  --color-sand-50: #fdfaf4;
+  --color-sand-100: #f7f0e2;
+  --color-sand-200: #ece0c9;
+  --color-sand-300: #ddcbab;
+
+  --color-maroon-600: #7b2231;
+  --color-maroon-700: #5f1926;
+
+  --color-ink: #1a1a17;
+  --color-muted: #6b6b60;
+
+  --font-display: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --radius-card: 1rem;
+  --shadow-card: 0 10px 30px -12px rgb(20 53 31 / 0.25);
+  --shadow-card-hover: 0 22px 45px -18px rgb(20 53 31 / 0.38);
+
+  --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --animate-fade-up: fade-up 0.6s var(--ease-soft) both;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: #ffffff;
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    color: var(--color-forest-900);
+    text-wrap: balance;
+  }
+
+  /* Keyboard focus stays visible against both the sand and forest grounds. */
+  :focus-visible {
+    outline: 2px solid var(--color-amber-500);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+}
+
+@layer utilities {
+  .container-page {
+    width: 100%;
+    max-width: 80rem;
+    margin-inline: auto;
+    padding-inline: 1.25rem;
+  }
+
+  @media (min-width: 768px) {
+    .container-page {
+      padding-inline: 2rem;
+    }
+  }
+
+  .reveal {
+    opacity: 0;
+  }
+
+  .reveal.is-visible {
+    animation: var(--animate-fade-up);
+  }
+
+  /* Fixed-attachment photographic backgrounds. Only applied on pointer devices
+     with a large enough viewport — mobile browsers handle it poorly. */
+  @media (min-width: 768px) {
+    .parallax-section {
+      background-attachment: fixed;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .reveal,
+  .reveal.is-visible {
+    opacity: 1;
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .parallax-section {
+    background-attachment: scroll !important;
+  }
+}

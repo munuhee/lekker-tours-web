@@ -1,0 +1,201 @@
+import type { Metadata } from 'next';
+import Image from 'next/image';
+import { notFound } from 'next/navigation';
+
+import { TourBanner } from '@/components/tours/TourBanner';
+import { TourInfoBoxes } from '@/components/tours/TourInfoBoxes';
+import { ItineraryTimeline } from '@/components/tours/ItineraryTimeline';
+import { InclusionLists } from '@/components/tours/InclusionLists';
+import { BookingCard } from '@/components/tours/BookingCard';
+import { RelatedTourCard } from '@/components/tours/RelatedTourCard';
+import { TourMap } from '@/components/tours/TourMap';
+
+import { apiGet, apiGetSafe, ApiRequestError } from '@/lib/api';
+import { getSettings } from '@/lib/settings';
+import { TAGS } from '@/lib/tags';
+import type { Tour } from '@/types';
+
+type Params = Promise<{ slug: string }>;
+
+async function getTour(slug: string): Promise<Tour | null> {
+  try {
+    return await apiGet<Tour>(`/api/tours/${slug}`, { tags: [TAGS.tour(slug), TAGS.tours] });
+  } catch (err) {
+    if (err instanceof ApiRequestError && err.status === 404) return null;
+    throw err;
+  }
+}
+
+export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
+  const { slug } = await params;
+  const tour = await getTour(slug);
+  if (!tour) return { title: 'Expedition not found' };
+
+  return {
+    title: tour.seo?.metaTitle ?? tour.title,
+    description: tour.seo?.metaDescription ?? tour.summary,
+    openGraph: {
+      title: tour.title,
+      description: tour.summary,
+      images: [{ url: tour.seo?.ogImage ?? tour.heroImage.url }],
+    },
+  };
+}
+
+/** Small-caps label above each section heading. */
+function Eyebrow({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="mb-2 text-[0.68rem] uppercase tracking-[0.2em] text-amber-600">{children}</p>
+  );
+}
+
+export default async function TourDetailPage({ params }: { params: Params }) {
+  const { slug } = await params;
+  const tour = await getTour(slug);
+  if (!tour) notFound();
+
+  const [related, settings] = await Promise.all([
+    apiGetSafe<Tour[]>(`/api/tours/${slug}/related`, [], { tags: [TAGS.tours] }),
+    getSettings(),
+  ]);
+
+  const destinationName =
+    typeof tour.destination === 'object' && tour.destination ? tour.destination.name : null;
+  const mapQuery = tour.parks?.[0] ?? destinationName ?? tour.countries?.[0] ?? 'Kenya';
+
+  return (
+    <>
+      <TourBanner tour={tour} country={destinationName ?? tour.countries?.[0]} />
+
+      <div className="bg-sand-50 py-14">
+        <div className="container-page grid gap-10 lg:grid-cols-[minmax(0,1fr)_370px] lg:gap-12">
+          {/* ---------- left column ---------- */}
+          <div className="min-w-0 space-y-12">
+            <section>
+              <Eyebrow>Overview</Eyebrow>
+              <h2 className="mb-6 font-display text-2xl text-forest-900">About this trip</h2>
+              <TourInfoBoxes tour={tour} />
+              <p className="mt-6 text-sm leading-relaxed text-muted">{tour.description}</p>
+            </section>
+
+            {tour.highlights?.length ? (
+              <section>
+                <Eyebrow>Highlights</Eyebrow>
+                <h2 className="mb-5 font-display text-2xl text-forest-900">
+                  What you&rsquo;ll see
+                </h2>
+                <ul className="grid gap-3 sm:grid-cols-2">
+                  {tour.highlights.map((h) => (
+                    <li
+                      key={h}
+                      className="flex items-start gap-2.5 rounded-xl border border-sand-200 bg-white px-4 py-3 text-sm leading-relaxed"
+                    >
+                      <span aria-hidden className="mt-0.5 shrink-0 text-amber-600">
+                        <PinIcon />
+                      </span>
+                      {h}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
+
+            {tour.gallery?.length ? (
+              <section>
+                <Eyebrow>Gallery</Eyebrow>
+                <h2 className="mb-5 font-display text-2xl text-forest-900">In pictures</h2>
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+                  {tour.gallery.map((image) => (
+                    <div key={image.url} className="relative aspect-[4/3] overflow-hidden rounded-xl">
+                      <Image
+                        src={image.url}
+                        alt={image.alt}
+                        fill
+                        sizes="(max-width: 768px) 50vw, 25vw"
+                        className="object-cover transition-transform duration-700 ease-soft hover:scale-105"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
+            {tour.itinerary?.length ? (
+              <section>
+                <Eyebrow>Itinerary</Eyebrow>
+                <h2 className="mb-6 font-display text-2xl text-forest-900">Day-by-day journey</h2>
+                <ItineraryTimeline days={tour.itinerary} location={destinationName} />
+              </section>
+            ) : null}
+
+            <section>
+              <InclusionLists inclusions={tour.inclusions} exclusions={tour.exclusions} />
+            </section>
+
+            <section>
+              <Eyebrow>Cancellation</Eyebrow>
+              <h2 className="mb-4 font-display text-2xl text-forest-900">Flexible booking</h2>
+              <div className="space-y-3 text-sm leading-relaxed text-muted">
+                <p>
+                  A deposit confirms your booking, with the balance due before departure. We accept
+                  bank transfer and card.
+                </p>
+                <p>
+                  Deposits are generally refundable up to a defined point before travel, after which
+                  charges apply. Gorilla permits are the exception — the parks themselves do not
+                  refund them once issued.
+                </p>
+                <p className="text-xs">
+                  Exact terms are set out in the booking confirmation we send you before any money
+                  changes hands.
+                </p>
+              </div>
+            </section>
+
+            <section>
+              <Eyebrow>Where you will travel</Eyebrow>
+              <h2 className="mb-5 font-display text-2xl text-forest-900">On the map</h2>
+              <TourMap query={mapQuery} title={tour.title} />
+              {tour.parks?.length ? (
+                <p className="mt-3 text-xs text-muted">{tour.parks.join(' · ')}</p>
+              ) : null}
+            </section>
+          </div>
+
+          {/* ---------- sticky booking sidebar ---------- */}
+          <aside className="lg:sticky lg:top-28 lg:h-fit">
+            <BookingCard
+              tourId={tour._id}
+              tourTitle={tour.title}
+              priceFrom={tour.priceFrom}
+              currency={tour.currency}
+              phone={settings.contact.phone}
+            />
+          </aside>
+        </div>
+      </div>
+
+      {related.length > 0 ? (
+        <section className="bg-white py-14">
+          <div className="container-page">
+            <h2 className="mb-6 font-display text-2xl text-forest-900">You might also like</h2>
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+              {related.map((r) => (
+                <RelatedTourCard key={r._id} tour={r} />
+              ))}
+            </div>
+          </div>
+        </section>
+      ) : null}
+    </>
+  );
+}
+
+function PinIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+      <path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11Z" />
+      <circle cx="12" cy="10" r="2.5" />
+    </svg>
+  );
+}
