@@ -5,31 +5,41 @@ import { adminApi, AdminApiError } from '@/lib/adminApi';
 import { DataTable, type Column } from '@/components/admin/DataTable';
 import { StatusPill } from '@/components/admin/StatusPill';
 import { ListPageHeader } from '@/components/admin/ListPageHeader';
-import type { Faq } from '@/types';
+import { Pagination } from '@/components/admin/Pagination';
+import { Modal } from '@/components/admin/Modal';
+import type { Faq, PageMeta } from '@/types';
 
 const GROUPS = ['general', 'booking', 'travel', 'payment'] as const;
 
 const BLANK = { question: '', answer: '', group: 'general', order: 0, status: 'draft' };
 
+const PER_PAGE = 25;
+
 export default function AdminFaqsPage() {
   const [faqs, setFaqs] = useState<Faq[]>([]);
+  const [meta, setMeta] = useState<PageMeta | undefined>();
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [editing, setEditing] = useState<Partial<Faq> | null>(null);
   const [saving, setSaving] = useState(false);
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const { items } = await adminApi.list<Faq>('/api/admin/faqs?limit=100');
+      const { items, meta: pageMeta } = await adminApi.list<Faq>(
+        `/api/admin/faqs?limit=${PER_PAGE}&page=${page}`
+      );
       setFaqs(items);
+      setMeta(pageMeta);
       setError('');
     } catch (err) {
       setError(err instanceof AdminApiError ? err.message : 'Could not load FAQs.');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [page]);
 
   useEffect(() => {
     load();
@@ -63,21 +73,31 @@ export default function AdminFaqsPage() {
 
   async function remove(id: string) {
     if (!confirm('Delete this FAQ?')) return;
+    setBusyId(id);
     try {
       await adminApi.remove(`/api/admin/faqs/${id}`);
-      setFaqs((list) => list.filter((f) => f._id !== id));
+      setError('');
+      await load();
     } catch (err) {
       setError(err instanceof AdminApiError ? err.message : 'Could not delete the FAQ.');
+    } finally {
+      setBusyId(null);
     }
   }
 
   async function toggle(faq: Faq) {
+    setBusyId(faq._id);
     const next = faq.status === 'published' ? 'draft' : 'published';
     try {
-      await adminApi.patch(`/api/admin/faqs/${faq._id}/status`, { status: next });
-      setFaqs((list) => list.map((f) => (f._id === faq._id ? { ...f, status: next } : f)));
+      const updated = await adminApi.patch<Faq>(`/api/admin/faqs/${faq._id}/status`, {
+        status: next,
+      });
+      setFaqs((list) => list.map((f) => (f._id === faq._id ? { ...f, ...updated } : f)));
+      setError('');
     } catch (err) {
       setError(err instanceof AdminApiError ? err.message : 'Could not change status.');
+    } finally {
+      setBusyId(null);
     }
   }
 
@@ -100,13 +120,23 @@ export default function AdminFaqsPage() {
       className: 'text-right',
       render: (f) => (
         <div className="flex items-center justify-end gap-3 text-xs">
-          <button type="button" onClick={() => toggle(f)} className="text-forest-700 underline">
+          <button
+            type="button"
+            onClick={() => toggle(f)}
+            disabled={busyId === f._id}
+            className="text-forest-700 underline disabled:opacity-50"
+          >
             {f.status === 'published' ? 'Unpublish' : 'Publish'}
           </button>
           <button type="button" onClick={() => setEditing(f)} className="text-forest-700 underline">
             Edit
           </button>
-          <button type="button" onClick={() => remove(f._id)} className="text-maroon-600 underline">
+          <button
+            type="button"
+            onClick={() => remove(f._id)}
+            disabled={busyId === f._id}
+            className="text-maroon-600 underline disabled:opacity-50"
+          >
             Delete
           </button>
         </div>
@@ -143,18 +173,17 @@ export default function AdminFaqsPage() {
         emptyMessage="Add the questions travellers ask most often."
       />
 
+      <Pagination meta={meta} onPageChange={setPage} busy={loading} />
+
       {editing ? (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label="Edit FAQ"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          onClick={(e) => e.target === e.currentTarget && setEditing(null)}
+        <Modal
+          as="form"
+          onSubmit={save}
+          label={editing._id ? 'Edit FAQ' : 'New FAQ'}
+          onClose={() => setEditing(null)}
+          className="max-w-lg"
         >
-          <form
-            onSubmit={save}
-            className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-card bg-white p-7"
-          >
+          <>
             <h2 className="mb-5 text-xl">{editing._id ? 'Edit FAQ' : 'New FAQ'}</h2>
 
             <div className="space-y-4">
@@ -250,8 +279,8 @@ export default function AdminFaqsPage() {
                 Cancel
               </button>
             </div>
-          </form>
-        </div>
+          </>
+        </Modal>
       ) : null}
     </div>
   );

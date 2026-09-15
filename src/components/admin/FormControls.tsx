@@ -15,6 +15,7 @@ export function TextField({
   placeholder,
   error,
   hint,
+  maxLength,
 }: {
   label: string;
   name: string;
@@ -25,6 +26,7 @@ export function TextField({
   placeholder?: string;
   error?: string;
   hint?: string;
+  maxLength?: number;
 }) {
   return (
     <div>
@@ -38,12 +40,22 @@ export function TextField({
         value={value}
         required={required}
         placeholder={placeholder}
+        maxLength={maxLength}
         onChange={(e) => onChange(e.target.value)}
         aria-invalid={error ? true : undefined}
+        aria-describedby={error ? `${name}-error` : hint ? `${name}-hint` : undefined}
         className={`${inputBase} ${error ? 'border-maroon-600' : 'border-sand-300 focus:border-amber-500'}`}
       />
-      {hint && !error ? <p className="mt-1 text-xs text-muted">{hint}</p> : null}
-      {error ? <p className="mt-1 text-xs text-maroon-600">{error}</p> : null}
+      {hint && !error ? (
+        <p id={`${name}-hint`} className="mt-1 text-xs text-muted">
+          {hint}
+        </p>
+      ) : null}
+      {error ? (
+        <p id={`${name}-error`} className="mt-1 text-xs text-maroon-600">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -58,6 +70,7 @@ export function TextArea({
   placeholder,
   error,
   hint,
+  maxLength,
 }: {
   label: string;
   name: string;
@@ -68,7 +81,11 @@ export function TextArea({
   placeholder?: string;
   error?: string;
   hint?: string;
+  maxLength?: number;
 }) {
+  // Warn as the cap approaches rather than only cutting the paste off silently.
+  const remaining = maxLength === undefined ? null : maxLength - value.length;
+
   return (
     <div>
       <label htmlFor={name} className="mb-1.5 block text-sm font-medium text-ink">
@@ -81,12 +98,31 @@ export function TextArea({
         value={value}
         required={required}
         placeholder={placeholder}
+        maxLength={maxLength}
         onChange={(e) => onChange(e.target.value)}
         aria-invalid={error ? true : undefined}
+        aria-describedby={error ? `${name}-error` : hint ? `${name}-hint` : undefined}
         className={`${inputBase} ${error ? 'border-maroon-600' : 'border-sand-300 focus:border-amber-500'}`}
       />
-      {hint && !error ? <p className="mt-1 text-xs text-muted">{hint}</p> : null}
-      {error ? <p className="mt-1 text-xs text-maroon-600">{error}</p> : null}
+      <div className="mt-1 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          {hint && !error ? (
+            <p id={`${name}-hint`} className="text-xs text-muted">
+              {hint}
+            </p>
+          ) : null}
+          {error ? (
+            <p id={`${name}-error`} className="text-xs text-maroon-600">
+              {error}
+            </p>
+          ) : null}
+        </div>
+        {remaining !== null && remaining <= Math.max(40, (maxLength ?? 0) * 0.15) ? (
+          <p className={`shrink-0 text-xs ${remaining === 0 ? 'text-maroon-600' : 'text-muted'}`}>
+            {remaining} left
+          </p>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -197,13 +233,16 @@ export function FormSection({
   title,
   description,
   children,
+  className = '',
 }: {
   title: string;
   description?: string;
   children: ReactNode;
+  /** Lets a grid parent span this section across columns. */
+  className?: string;
 }) {
   return (
-    <section className="rounded-card border border-sand-200 bg-white p-6">
+    <section className={`rounded-card border border-sand-200 bg-white p-6 ${className}`}>
       <h2 className="text-lg">{title}</h2>
       {description ? <p className="mt-1 text-sm text-muted">{description}</p> : null}
       <div className="mt-5 space-y-4">{children}</div>

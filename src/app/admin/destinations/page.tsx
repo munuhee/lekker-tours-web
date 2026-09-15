@@ -7,47 +7,67 @@ import { adminApi, AdminApiError } from '@/lib/adminApi';
 import { DataTable, type Column } from '@/components/admin/DataTable';
 import { StatusPill } from '@/components/admin/StatusPill';
 import { ListPageHeader } from '@/components/admin/ListPageHeader';
-import type { Destination } from '@/types';
+import { Pagination } from '@/components/admin/Pagination';
+import type { Destination, PageMeta } from '@/types';
+
+const PER_PAGE = 25;
 
 export default function AdminDestinationsPage() {
   const [items, setItems] = useState<Destination[]>([]);
+  const [meta, setMeta] = useState<PageMeta | undefined>();
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const { items: rows } = await adminApi.list<Destination>('/api/admin/destinations?limit=100');
+      const { items: rows, meta: pageMeta } = await adminApi.list<Destination>(
+        `/api/admin/destinations?limit=${PER_PAGE}&page=${page}`
+      );
       setItems(rows);
+      setMeta(pageMeta);
       setError('');
     } catch (err) {
       setError(err instanceof AdminApiError ? err.message : 'Could not load destinations.');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [page]);
 
   useEffect(() => {
     load();
   }, [load]);
 
   async function toggle(d: Destination) {
+    setBusyId(d._id);
     const next = d.status === 'published' ? 'draft' : 'published';
     try {
-      await adminApi.patch(`/api/admin/destinations/${d._id}/status`, { status: next });
-      setItems((list) => list.map((x) => (x._id === d._id ? { ...x, status: next } : x)));
+      const updated = await adminApi.patch<Destination>(
+        `/api/admin/destinations/${d._id}/status`,
+        { status: next }
+      );
+      setItems((list) => list.map((x) => (x._id === d._id ? { ...x, ...updated } : x)));
+      setError('');
     } catch (err) {
       setError(err instanceof AdminApiError ? err.message : 'Could not change status.');
+    } finally {
+      setBusyId(null);
     }
   }
 
   async function remove(id: string) {
     if (!confirm('Delete this destination? Tours linked to it will keep working.')) return;
+    setBusyId(id);
     try {
       await adminApi.remove(`/api/admin/destinations/${id}`);
-      setItems((list) => list.filter((d) => d._id !== id));
+      setError('');
+      await load();
     } catch (err) {
       setError(err instanceof AdminApiError ? err.message : 'Could not delete.');
+    } finally {
+      setBusyId(null);
     }
   }
 
@@ -87,13 +107,23 @@ export default function AdminDestinationsPage() {
       className: 'text-right',
       render: (d) => (
         <div className="flex items-center justify-end gap-3 text-xs">
-          <button type="button" onClick={() => toggle(d)} className="text-forest-700 underline">
+          <button
+            type="button"
+            onClick={() => toggle(d)}
+            disabled={busyId === d._id}
+            className="text-forest-700 underline disabled:opacity-50"
+          >
             {d.status === 'published' ? 'Unpublish' : 'Publish'}
           </button>
           <Link href={`/admin/destinations/${d._id}`} className="text-forest-700 underline">
             Edit
           </Link>
-          <button type="button" onClick={() => remove(d._id)} className="text-maroon-600 underline">
+          <button
+            type="button"
+            onClick={() => remove(d._id)}
+            disabled={busyId === d._id}
+            className="text-maroon-600 underline disabled:opacity-50"
+          >
             Delete
           </button>
         </div>
@@ -132,6 +162,8 @@ export default function AdminDestinationsPage() {
           </Link>
         }
       />
+
+      <Pagination meta={meta} onPageChange={setPage} busy={loading} />
     </div>
   );
 }

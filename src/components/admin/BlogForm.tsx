@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { adminApi, AdminApiError } from '@/lib/adminApi';
+import { useUnsavedChangesGuard } from '@/lib/useUnsavedChanges';
 import {
   TextField,
   TextArea,
@@ -31,6 +32,20 @@ export function BlogForm({ post }: { post?: BlogPost }) {
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
 
+  const snapshot = JSON.stringify({
+    title,
+    excerpt,
+    content,
+    coverImage,
+    authorName,
+    tags,
+    readingMinutes,
+    featured,
+    status,
+  });
+  const initial = useRef(snapshot);
+  useUnsavedChangesGuard(snapshot !== initial.current && !saving && !deleting);
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!coverImage?.url || !coverImage.alt) {
@@ -56,6 +71,7 @@ export function BlogForm({ post }: { post?: BlogPost }) {
     try {
       if (post) {
         await adminApi.patch(`/api/admin/blog/${post._id}`, body);
+        initial.current = snapshot;
         router.refresh();
       } else {
         const created = await adminApi.post<BlogPost>('/api/admin/blog', body);

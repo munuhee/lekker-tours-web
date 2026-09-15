@@ -1,6 +1,7 @@
 'use client';
 
 import { API_URL } from './api';
+import type { PageMeta } from '@/types';
 
 /**
  * Browser-side admin client. Always sends the httpOnly cookie and never
@@ -15,6 +16,22 @@ export class AdminApiError extends Error {
     super(message);
     this.name = 'AdminApiError';
   }
+}
+
+/**
+ * A 7-day session that expires mid-edit used to surface as an inline red banner
+ * on every page, with no way back to the login screen short of typing the URL.
+ * Any 401 now sends the browser to /admin/login, remembering where it was.
+ */
+function redirectToLogin(): never {
+  if (typeof window !== 'undefined') {
+    const from = `${window.location.pathname}${window.location.search}`;
+    const target = from.startsWith('/admin/login')
+      ? '/admin/login'
+      : `/admin/login?from=${encodeURIComponent(from)}`;
+    window.location.replace(target);
+  }
+  throw new AdminApiError('Your session has expired. Please sign in again.', 401);
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
@@ -32,6 +49,8 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   } catch {
     throw new AdminApiError('Could not reach the API. Is the server running?', 0);
   }
+
+  if (res.status === 401) redirectToLogin();
 
   const payload = await res.json().catch(() => null);
 
@@ -56,11 +75,15 @@ export const adminApi = {
     } catch {
       throw new AdminApiError('Could not reach the API. Is the server running?', 0);
     }
+    if (res.status === 401) redirectToLogin();
     const payload = await res.json().catch(() => null);
     if (!res.ok || !payload?.success) {
       throw new AdminApiError(payload?.error?.message ?? 'Request failed.', res.status);
     }
-    return { items: (payload.data ?? []) as T[], meta: payload.meta };
+    return {
+      items: (payload.data ?? []) as T[],
+      meta: payload.meta as PageMeta | undefined,
+    };
   },
 
   post: <T>(path: string, body: unknown) =>
@@ -80,6 +103,8 @@ export const adminApi = {
       credentials: 'include',
       body: form,
     });
+
+    if (res.status === 401) redirectToLogin();
 
     const payload = await res.json().catch(() => null);
     if (!res.ok || !payload?.success) {

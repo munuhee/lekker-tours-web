@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { adminApi } from '@/lib/adminApi';
 import type { AdminUser } from '@/lib/auth';
 
@@ -26,37 +26,77 @@ export function AdminShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+  const [logoutError, setLogoutError] = useState('');
+
+  // The drawer is only a drawer below lg; above it the sidebar is static and
+  // must stay reachable, so the inert treatment is scoped to mobile widths.
+  useEffect(() => {
+    const query = window.matchMedia('(max-width: 1023px)');
+    const sync = () => setIsMobile(query.matches);
+    sync();
+    query.addEventListener('change', sync);
+    return () => query.removeEventListener('change', sync);
+  }, []);
+
+  // Escape closes the mobile drawer.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open]);
 
   // The login page renders without the shell chrome.
   if (pathname === '/admin/login') {
     return <>{children}</>;
   }
 
+  /**
+   * Only leave once the server has actually cleared the cookie. Pretending to
+   * sign out while the session is still live is worse than showing an error —
+   * on a shared machine the next person can navigate straight back in.
+   */
   async function logout() {
+    setSigningOut(true);
+    setLogoutError('');
     try {
       await adminApi.post('/api/auth/logout', {});
     } catch {
-      // Even if the call fails, send them to the login screen.
+      setLogoutError('Could not sign out. Check your connection and try again.');
+      setSigningOut(false);
+      return;
     }
-    router.push('/admin/login');
-    router.refresh();
+    // Full reload so no client cache outlives the session.
+    window.location.assign('/admin/login');
   }
 
   return (
     <div className="flex min-h-screen">
+      {/* Off-screen via translate still leaves links focusable, so tabbing used
+          to land on invisible nav items. inert removes them from the tab order
+          and the accessibility tree while the drawer is closed on mobile. */}
+      {/* lg:sticky rather than lg:static: as a plain flex child the sidebar
+          scrolled away on long list and form pages. Sticky pins it for the
+          full viewport height while leaving it in normal flow, so the main
+          column still sits beside it. */}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 w-64 shrink-0 bg-forest-950 text-sand-100 transition-transform duration-300 lg:static lg:translate-x-0 ${
+        inert={!open && isMobile ? true : undefined}
+        className={`fixed inset-y-0 left-0 z-40 flex w-64 shrink-0 flex-col bg-forest-950 text-sand-100 transition-transform duration-300 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="flex h-16 items-center gap-3 border-b border-white/10 px-5">
+        <div className="flex h-16 shrink-0 items-center gap-3 border-b border-white/10 px-5">
           <Image src="/logo.png" alt="" width={32} height={32} className="h-8 w-8 object-contain" />
           <span className="font-display text-lg text-sand-50">Lekker Admin</span>
         </div>
 
-        <nav className="flex flex-col gap-0.5 p-3" aria-label="Admin sections">
+        {/* Scrolls internally if the nav ever outgrows a short viewport. */}
+        <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-3" aria-label="Admin sections">
           {NAV.map((item) => {
             const active = item.exact ? pathname === item.href : pathname.startsWith(item.href);
             return (
@@ -75,7 +115,10 @@ export function AdminShell({
           })}
         </nav>
 
-        <div className="absolute inset-x-0 bottom-0 border-t border-white/10 p-4">
+        {/* Was absolute inset-x-0 bottom-0, which anchored to the aside's own
+            box once it stopped being fixed on desktop. As a flex child after a
+            flex-1 nav it sits at the bottom in both layouts. */}
+        <div className="shrink-0 border-t border-white/10 p-4">
           <Link
             href="/"
             target="_blank"
@@ -90,26 +133,36 @@ export function AdminShell({
               <button
                 type="button"
                 onClick={logout}
-                className="w-full rounded-lg border border-white/20 py-2 text-xs text-sand-100 transition-colors hover:border-amber-500 hover:text-amber-400"
+                disabled={signingOut}
+                className="w-full rounded-lg border border-white/20 py-2 text-xs text-sand-100 transition-colors hover:border-amber-500 hover:text-amber-400 disabled:opacity-60"
               >
-                Sign out
+                {signingOut ? 'Signing out…' : 'Sign out'}
               </button>
+              {logoutError ? (
+                <p role="alert" className="mt-2 text-xs text-amber-400">
+                  {logoutError}
+                </p>
+              ) : null}
             </>
           ) : null}
         </div>
       </aside>
 
+      {/* A plain div, not a button: a full-viewport focusable element sat in the
+          tab order and was announced as a button to screen readers. Escape and
+          the in-drawer links already provide keyboard dismissal. */}
       {open ? (
-        <button
-          type="button"
-          aria-label="Close navigation"
+        <div
+          aria-hidden="true"
           onClick={() => setOpen(false)}
           className="fixed inset-0 z-30 bg-black/40 lg:hidden"
         />
       ) : null}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-16 items-center gap-4 border-b border-sand-200 bg-white px-5 lg:hidden">
+        {/* Below lg this bar is the only way to reach the nav, so it stays put
+            as the page scrolls. z-20 keeps it under the drawer and overlay. */}
+        <header className="sticky top-0 z-20 flex h-16 items-center gap-4 border-b border-sand-200 bg-white px-5 lg:hidden">
           <button
             type="button"
             onClick={() => setOpen(true)}
@@ -121,7 +174,10 @@ export function AdminShell({
           <span className="font-display text-lg">Lekker Admin</span>
         </header>
 
-        <main className="flex-1 p-5 md:p-8">{children}</main>
+        {/* Centre the content column and cap it: with a 256px sidebar on the
+            left, a page left-aligned in a 2560px viewport strands everything
+            right of ~1050px as dead space. mx-auto balances the gutters. */}
+        <main className="mx-auto w-full max-w-[1400px] flex-1 p-5 md:p-8">{children}</main>
       </div>
     </div>
   );

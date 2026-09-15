@@ -99,7 +99,7 @@ export function ContactForm() {
 
         <div className="sm:col-span-2">
           <Field
-            label="Estimated budget (USD, per person)"
+            label="Estimated budget (KES, per person)"
             name="budgetUSD"
             type="number"
             error={errors.budgetUSD}

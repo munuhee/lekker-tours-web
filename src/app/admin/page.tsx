@@ -3,29 +3,38 @@ import { redirect } from 'next/navigation';
 import { getCurrentAdmin, adminCookieHeader } from '@/lib/auth';
 import { API_URL } from '@/lib/api';
 
+/**
+ * `null` means the count could not be loaded — distinct from a real zero. A
+ * dead API used to render a confident "0 Tours, 0 Enquiries", which reads as
+ * data loss rather than a connection problem.
+ */
+type Count = number | null;
+
 interface Counts {
-  tours: number;
-  drafts: number;
-  destinations: number;
-  blog: number;
-  testimonials: number;
-  faqs: number;
-  enquiries: number;
-  newEnquiries: number;
+  tours: Count;
+  drafts: Count;
+  destinations: Count;
+  blog: Count;
+  testimonials: Count;
+  faqs: Count;
+  enquiries: Count;
+  newEnquiries: Count;
+  failed: boolean;
 }
 
 async function loadCounts(cookie?: string): Promise<Counts> {
-  const zero: Counts = {
-    tours: 0,
-    drafts: 0,
-    destinations: 0,
-    blog: 0,
-    testimonials: 0,
-    faqs: 0,
-    enquiries: 0,
-    newEnquiries: 0,
+  const unknown: Counts = {
+    tours: null,
+    drafts: null,
+    destinations: null,
+    blog: null,
+    testimonials: null,
+    faqs: null,
+    enquiries: null,
+    newEnquiries: null,
+    failed: true,
   };
-  if (!cookie) return zero;
+  if (!cookie) return unknown;
 
   const get = async (path: string) => {
     try {
@@ -47,15 +56,20 @@ async function loadCounts(cookie?: string): Promise<Counts> {
     get('/api/admin/enquiries?limit=1'),
   ]);
 
+  const responses = [tours, drafts, destinations, blog, testimonials, faqs, enquiries];
+  const total = (res: unknown) =>
+    (res as { meta?: { total?: number } } | null)?.meta?.total ?? null;
+
   return {
-    tours: tours?.meta?.total ?? 0,
-    drafts: drafts?.meta?.total ?? 0,
-    destinations: destinations?.meta?.total ?? 0,
-    blog: blog?.meta?.total ?? 0,
-    testimonials: testimonials?.meta?.total ?? 0,
-    faqs: faqs?.meta?.total ?? 0,
-    enquiries: enquiries?.meta?.total ?? 0,
-    newEnquiries: enquiries?.meta?.unreadCount ?? 0,
+    tours: total(tours),
+    drafts: total(drafts),
+    destinations: total(destinations),
+    blog: total(blog),
+    testimonials: total(testimonials),
+    faqs: total(faqs),
+    enquiries: total(enquiries),
+    newEnquiries: enquiries?.meta?.unreadCount ?? null,
+    failed: responses.some((r) => r === null),
   };
 }
 
@@ -66,8 +80,15 @@ export default async function AdminDashboardPage() {
   const cookie = await adminCookieHeader();
   const counts = await loadCounts(cookie);
 
+  const unread = counts.newEnquiries;
+
   const cards = [
-    { label: 'Tours', value: counts.tours, hint: `${counts.drafts} in draft`, href: '/admin/tours' },
+    {
+      label: 'Tours',
+      value: counts.tours,
+      hint: counts.drafts === null ? undefined : `${counts.drafts} in draft`,
+      href: '/admin/tours',
+    },
     { label: 'Destinations', value: counts.destinations, href: '/admin/destinations' },
     { label: 'Blog posts', value: counts.blog, href: '/admin/blog' },
     { label: 'Testimonials', value: counts.testimonials, href: '/admin/testimonials' },
@@ -75,9 +96,9 @@ export default async function AdminDashboardPage() {
     {
       label: 'Enquiries',
       value: counts.enquiries,
-      hint: counts.newEnquiries > 0 ? `${counts.newEnquiries} unread` : 'All read',
+      hint: unread === null ? undefined : unread > 0 ? `${unread} unread` : 'All read',
       href: '/admin/enquiries',
-      highlight: counts.newEnquiries > 0,
+      highlight: unread !== null && unread > 0,
     },
   ];
 
@@ -90,6 +111,16 @@ export default async function AdminDashboardPage() {
         </p>
       </header>
 
+      {counts.failed ? (
+        <p
+          role="alert"
+          className="mb-5 rounded-lg bg-maroon-600/10 px-4 py-3 text-sm text-maroon-700"
+        >
+          Some counts could not be loaded — the API may be unreachable. Figures shown as “—”
+          are unknown, not zero.
+        </p>
+      ) : null}
+
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
         {cards.map((card) => (
           <Link
@@ -100,7 +131,15 @@ export default async function AdminDashboardPage() {
             }`}
           >
             <p className="text-xs uppercase tracking-wider text-muted">{card.label}</p>
-            <p className="mt-2 font-display text-4xl text-forest-900">{card.value}</p>
+            <p className="mt-2 font-display text-4xl text-forest-900">
+              {card.value === null ? (
+                <span className="text-sand-300" title="Could not load">
+                  —
+                </span>
+              ) : (
+                card.value
+              )}
+            </p>
             {card.hint ? (
               <p className={`mt-1 text-xs ${card.highlight ? 'text-amber-600' : 'text-muted'}`}>
                 {card.hint}

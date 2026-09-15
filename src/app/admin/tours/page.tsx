@@ -7,11 +7,16 @@ import { adminApi, AdminApiError } from '@/lib/adminApi';
 import { DataTable, type Column } from '@/components/admin/DataTable';
 import { StatusPill } from '@/components/admin/StatusPill';
 import { ListPageHeader } from '@/components/admin/ListPageHeader';
+import { Pagination } from '@/components/admin/Pagination';
 import { formatPrice } from '@/lib/format';
-import type { Tour } from '@/types';
+import type { Tour, PageMeta } from '@/types';
+
+const PER_PAGE = 25;
 
 export default function AdminToursPage() {
   const [tours, setTours] = useState<Tour[]>([]);
+  const [meta, setMeta] = useState<PageMeta | undefined>();
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -19,15 +24,18 @@ export default function AdminToursPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const { items } = await adminApi.list<Tour>('/api/admin/tours?limit=100&sort=newest');
+      const { items, meta: pageMeta } = await adminApi.list<Tour>(
+        `/api/admin/tours?limit=${PER_PAGE}&page=${page}&sort=newest`
+      );
       setTours(items);
+      setMeta(pageMeta);
       setError('');
     } catch (err) {
       setError(err instanceof AdminApiError ? err.message : 'Could not load tours.');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [page]);
 
   useEffect(() => {
     load();
@@ -37,8 +45,12 @@ export default function AdminToursPage() {
     setBusyId(tour._id);
     const next = tour.status === 'published' ? 'draft' : 'published';
     try {
-      await adminApi.patch(`/api/admin/tours/${tour._id}/status`, { status: next });
-      setTours((list) => list.map((t) => (t._id === tour._id ? { ...t, status: next } : t)));
+      // Trust the document the API returns rather than the status we assumed.
+      const updated = await adminApi.patch<Tour>(`/api/admin/tours/${tour._id}/status`, {
+        status: next,
+      });
+      setTours((list) => list.map((t) => (t._id === tour._id ? { ...t, ...updated } : t)));
+      setError('');
     } catch (err) {
       setError(err instanceof AdminApiError ? err.message : 'Could not change status.');
     } finally {
@@ -135,6 +147,8 @@ export default function AdminToursPage() {
           </Link>
         }
       />
+
+      <Pagination meta={meta} onPageChange={setPage} busy={loading} />
     </div>
   );
 }

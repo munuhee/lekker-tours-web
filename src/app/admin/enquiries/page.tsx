@@ -5,8 +5,10 @@ import { adminApi, AdminApiError } from '@/lib/adminApi';
 import { DataTable, type Column } from '@/components/admin/DataTable';
 import { StatusPill } from '@/components/admin/StatusPill';
 import { ListPageHeader } from '@/components/admin/ListPageHeader';
-import { formatDate } from '@/lib/format';
-import type { Enquiry } from '@/types';
+import { Pagination } from '@/components/admin/Pagination';
+import { Modal } from '@/components/admin/Modal';
+import { formatDate, formatPrice } from '@/lib/format';
+import type { Enquiry, PageMeta } from '@/types';
 
 const FILTERS = [
   { value: '', label: 'All' },
@@ -16,8 +18,12 @@ const FILTERS = [
   { value: 'archived', label: 'Archived' },
 ];
 
+const PER_PAGE = 25;
+
 export default function AdminEnquiriesPage() {
   const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
+  const [meta, setMeta] = useState<PageMeta | undefined>();
+  const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Enquiry | null>(null);
   const [filter, setFilter] = useState('');
   const [loading, setLoading] = useState(true);
@@ -26,20 +32,31 @@ export default function AdminEnquiriesPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const query = filter ? `?status=${filter}&limit=100` : '?limit=100';
-      const { items } = await adminApi.list<Enquiry>(`/api/admin/enquiries${query}`);
+      const params = new URLSearchParams({ limit: String(PER_PAGE), page: String(page) });
+      if (filter) params.set('status', filter);
+      const { items, meta: pageMeta } = await adminApi.list<Enquiry>(
+        `/api/admin/enquiries?${params}`
+      );
       setEnquiries(items);
+      setMeta(pageMeta);
       setError('');
     } catch (err) {
       setError(err instanceof AdminApiError ? err.message : 'Could not load enquiries.');
     } finally {
       setLoading(false);
     }
-  }, [filter]);
+  }, [filter, page]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  // A filter change restarts paging; staying on page 4 of the old filter would
+  // usually land on an empty result.
+  function changeFilter(next: string) {
+    setFilter(next);
+    setPage(1);
+  }
 
   async function open(enquiry: Enquiry) {
     try {
@@ -56,9 +73,10 @@ export default function AdminEnquiriesPage() {
 
   async function setStatus(id: string, status: Enquiry['status']) {
     try {
-      await adminApi.patch(`/api/admin/enquiries/${id}`, { status });
-      setEnquiries((list) => list.map((e) => (e._id === id ? { ...e, status } : e)));
-      setSelected((s) => (s && s._id === id ? { ...s, status } : s));
+      const updated = await adminApi.patch<Enquiry>(`/api/admin/enquiries/${id}`, { status });
+      setEnquiries((list) => list.map((e) => (e._id === id ? { ...e, ...updated } : e)));
+      setSelected((s) => (s && s._id === id ? { ...s, ...updated } : s));
+      setError('');
     } catch (err) {
       setError(err instanceof AdminApiError ? err.message : 'Could not update the enquiry.');
     }
@@ -68,8 +86,9 @@ export default function AdminEnquiriesPage() {
     if (!confirm('Delete this enquiry permanently?')) return;
     try {
       await adminApi.remove(`/api/admin/enquiries/${id}`);
-      setEnquiries((list) => list.filter((e) => e._id !== id));
       setSelected(null);
+      setError('');
+      await load();
     } catch (err) {
       setError(err instanceof AdminApiError ? err.message : 'Could not delete the enquiry.');
     }
@@ -125,7 +144,7 @@ export default function AdminEnquiriesPage() {
           <button
             key={f.value}
             type="button"
-            onClick={() => setFilter(f.value)}
+            onClick={() => changeFilter(f.value)}
             aria-pressed={filter === f.value}
             className={`rounded-full px-4 py-2 text-xs transition-colors ${
               filter === f.value
@@ -153,15 +172,15 @@ export default function AdminEnquiriesPage() {
         emptyMessage="Submissions from the contact and booking forms will appear here."
       />
 
+      <Pagination meta={meta} onPageChange={setPage} busy={loading} />
+
       {selected ? (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label="Enquiry detail"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          onClick={(e) => e.target === e.currentTarget && setSelected(null)}
+        <Modal
+          label={`Enquiry from ${selected.name}`}
+          onClose={() => setSelected(null)}
+          className="max-w-lg"
         >
-          <div className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-card bg-white p-7">
+          <>
             <div className="mb-5 flex items-start justify-between gap-4">
               <div>
                 <h2 className="text-xl">{selected.name}</h2>
@@ -200,7 +219,7 @@ export default function AdminEnquiriesPage() {
                     <Row label="Interest" value={selected.expeditionInterest} />
                   ) : null}
                   {selected.budgetUSD ? (
-                    <Row label="Budget" value={`$${selected.budgetUSD.toLocaleString()}`} />
+                    <Row label="Budget" value={formatPrice(selected.budgetUSD)} />
                   ) : null}
                 </>
               )}
@@ -238,8 +257,8 @@ export default function AdminEnquiriesPage() {
                 Delete
               </button>
             </div>
-          </div>
-        </div>
+          </>
+        </Modal>
       ) : null}
     </div>
   );

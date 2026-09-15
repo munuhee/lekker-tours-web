@@ -7,48 +7,68 @@ import { adminApi, AdminApiError } from '@/lib/adminApi';
 import { DataTable, type Column } from '@/components/admin/DataTable';
 import { StatusPill } from '@/components/admin/StatusPill';
 import { ListPageHeader } from '@/components/admin/ListPageHeader';
+import { Pagination } from '@/components/admin/Pagination';
 import { formatDate } from '@/lib/format';
-import type { BlogPost } from '@/types';
+import type { BlogPost, PageMeta } from '@/types';
+
+const PER_PAGE = 25;
 
 export default function AdminBlogPage() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
+  const [meta, setMeta] = useState<PageMeta | undefined>();
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const { items } = await adminApi.list<BlogPost>('/api/admin/blog?limit=100');
+      const { items, meta: pageMeta } = await adminApi.list<BlogPost>(
+        `/api/admin/blog?limit=${PER_PAGE}&page=${page}`
+      );
       setPosts(items);
+      setMeta(pageMeta);
       setError('');
     } catch (err) {
       setError(err instanceof AdminApiError ? err.message : 'Could not load posts.');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [page]);
 
   useEffect(() => {
     load();
   }, [load]);
 
   async function toggle(post: BlogPost) {
+    setBusyId(post._id);
     const next = post.status === 'published' ? 'draft' : 'published';
     try {
-      await adminApi.patch(`/api/admin/blog/${post._id}/status`, { status: next });
-      setPosts((list) => list.map((p) => (p._id === post._id ? { ...p, status: next } : p)));
+      const updated = await adminApi.patch<BlogPost>(`/api/admin/blog/${post._id}/status`, {
+        status: next,
+      });
+      setPosts((list) => list.map((p) => (p._id === post._id ? { ...p, ...updated } : p)));
+      setError('');
     } catch (err) {
       setError(err instanceof AdminApiError ? err.message : 'Could not change status.');
+    } finally {
+      setBusyId(null);
     }
   }
 
   async function remove(id: string) {
     if (!confirm('Delete this post permanently?')) return;
+    setBusyId(id);
     try {
       await adminApi.remove(`/api/admin/blog/${id}`);
-      setPosts((list) => list.filter((p) => p._id !== id));
+      setError('');
+      // Reload so pagination totals stay correct after a removal.
+      await load();
     } catch (err) {
       setError(err instanceof AdminApiError ? err.message : 'Could not delete the post.');
+    } finally {
+      setBusyId(null);
     }
   }
 
@@ -89,13 +109,23 @@ export default function AdminBlogPage() {
       className: 'text-right',
       render: (p) => (
         <div className="flex items-center justify-end gap-3 text-xs">
-          <button type="button" onClick={() => toggle(p)} className="text-forest-700 underline">
+          <button
+            type="button"
+            onClick={() => toggle(p)}
+            disabled={busyId === p._id}
+            className="text-forest-700 underline disabled:opacity-50"
+          >
             {p.status === 'published' ? 'Unpublish' : 'Publish'}
           </button>
           <Link href={`/admin/blog/${p._id}`} className="text-forest-700 underline">
             Edit
           </Link>
-          <button type="button" onClick={() => remove(p._id)} className="text-maroon-600 underline">
+          <button
+            type="button"
+            onClick={() => remove(p._id)}
+            disabled={busyId === p._id}
+            className="text-maroon-600 underline disabled:opacity-50"
+          >
             Delete
           </button>
         </div>
@@ -134,6 +164,8 @@ export default function AdminBlogPage() {
           </Link>
         }
       />
+
+      <Pagination meta={meta} onPageChange={setPage} busy={loading} />
     </div>
   );
 }

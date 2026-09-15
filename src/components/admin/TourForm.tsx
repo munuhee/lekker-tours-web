@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { adminApi, AdminApiError } from '@/lib/adminApi';
+import { useUnsavedChangesGuard } from '@/lib/useUnsavedChanges';
 import {
   TextField,
   TextArea,
@@ -26,6 +27,7 @@ interface FormState {
   priceFrom: string;
   currency: string;
   durationDays: string;
+  durationNights: string;
   groupSizeMax: string;
   difficulty: string;
   rating: string;
@@ -42,6 +44,9 @@ interface FormState {
   featured: boolean;
   bestSelling: boolean;
   status: string;
+  order: string;
+  metaTitle: string;
+  metaDescription: string;
 }
 
 function toFormState(tour?: Tour): FormState {
@@ -51,8 +56,9 @@ function toFormState(tour?: Tour): FormState {
     summary: tour?.summary ?? '',
     description: tour?.description ?? '',
     priceFrom: String(tour?.priceFrom ?? ''),
-    currency: tour?.currency ?? 'USD',
+    currency: tour?.currency ?? 'KES',
     durationDays: String(tour?.durationDays ?? ''),
+    durationNights: tour?.durationNights === undefined ? '' : String(tour.durationNights),
     groupSizeMax: String(tour?.groupSizeMax ?? 7),
     difficulty: tour?.difficulty ?? 'easy',
     rating: String(tour?.rating ?? 4.8),
@@ -72,6 +78,9 @@ function toFormState(tour?: Tour): FormState {
     featured: tour?.featured ?? false,
     bestSelling: tour?.bestSelling ?? false,
     status: tour?.status ?? 'draft',
+    order: String(tour?.order ?? 0),
+    metaTitle: tour?.seo?.metaTitle ?? '',
+    metaDescription: tour?.seo?.metaDescription ?? '',
   };
 }
 
@@ -83,11 +92,16 @@ export function TourForm({
   destinations: Destination[];
 }) {
   const router = useRouter();
-  const [form, setForm] = useState<FormState>(() => toFormState(tour));
+  const initial = useRef<FormState>(toFormState(tour));
+  const [form, setForm] = useState<FormState>(() => initial.current);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  // Leaving with unsaved edits used to discard a long form silently.
+  const dirty = JSON.stringify(form) !== JSON.stringify(initial.current);
+  useUnsavedChangesGuard(dirty && !saving && !deleting);
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
@@ -112,6 +126,7 @@ export function TourForm({
       currency: form.currency,
       durationDays: Number(form.durationDays),
       groupSizeMax: Number(form.groupSizeMax),
+      order: Number(form.order),
       difficulty: form.difficulty,
       rating: Number(form.rating),
       reviewCount: Number(form.reviewCount),
@@ -127,6 +142,16 @@ export function TourForm({
       status: form.status,
     };
 
+    // Blank means "derive from days" on the server, so only send a real value.
+    if (form.durationNights !== '') payload.durationNights = Number(form.durationNights);
+
+    if (form.metaTitle || form.metaDescription) {
+      payload.seo = {
+        ...(form.metaTitle ? { metaTitle: form.metaTitle } : {}),
+        ...(form.metaDescription ? { metaDescription: form.metaDescription } : {}),
+      };
+    }
+
     if (form.destination) payload.destination = form.destination;
     if (form.category === 'SafariExpedition') payload.parks = form.parks;
 
@@ -136,6 +161,8 @@ export function TourForm({
     try {
       if (tour) {
         await adminApi.patch(`/api/admin/tours/${tour._id}`, payload);
+        // The form now matches what is stored, so it is no longer dirty.
+        initial.current = form;
       } else {
         const created = await adminApi.post<Tour>('/api/admin/tours', payload);
         router.push(`/admin/tours/${created._id}`);
@@ -252,6 +279,15 @@ export function TourForm({
             onChange={(v) => set('durationDays', v)}
             required
             error={fieldErrors.durationDays}
+          />
+          <TextField
+            label="Duration (nights)"
+            name="durationNights"
+            type="number"
+            value={form.durationNights}
+            onChange={(v) => set('durationNights', v)}
+            hint="Leave blank for one fewer than the number of days."
+            error={fieldErrors.durationNights}
           />
           <TextField
             label="Maximum guests"
@@ -404,6 +440,37 @@ export function TourForm({
           checked={form.bestSelling}
           onChange={(v) => set('bestSelling', v)}
           hint="Appears in the best-selling row on the homepage."
+        />
+        <TextField
+          label="Order"
+          name="order"
+          type="number"
+          value={form.order}
+          onChange={(v) => set('order', v)}
+          hint="Lower numbers sort first in listings."
+          error={fieldErrors.order}
+        />
+      </FormSection>
+
+      <FormSection title="SEO" description="Used where this tour needs its own meta tags.">
+        <TextField
+          label="Meta title"
+          name="metaTitle"
+          value={form.metaTitle}
+          onChange={(v) => set('metaTitle', v)}
+          maxLength={70}
+          hint="Falls back to the tour title."
+          error={fieldErrors['seo.metaTitle']}
+        />
+        <TextArea
+          label="Meta description"
+          name="metaDescription"
+          value={form.metaDescription}
+          onChange={(v) => set('metaDescription', v)}
+          rows={2}
+          maxLength={180}
+          hint="Falls back to the summary."
+          error={fieldErrors['seo.metaDescription']}
         />
       </FormSection>
 

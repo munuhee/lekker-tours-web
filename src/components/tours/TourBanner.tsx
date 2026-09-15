@@ -5,7 +5,7 @@ import type { Tour } from '@/types';
 /** Short banner with a back link, country chip, title and inline icon metadata. */
 export function TourBanner({ tour, country }: { tour: Tour; country?: string | null }) {
   return (
-    <section className="relative flex min-h-[46vh] items-end overflow-hidden md:min-h-[52vh]">
+    <section className="relative flex min-h-[52vh] items-end overflow-hidden md:min-h-[58vh]">
       <Image
         src={tour.heroImage.url}
         alt={tour.heroImage.alt}

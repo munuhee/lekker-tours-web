@@ -26,7 +26,7 @@ export function PageBanner({
   return (
     <section
       className={`relative flex items-end overflow-hidden ${
-        height === 'tall' ? 'min-h-[72vh]' : 'min-h-[56vh]'
+        height === 'tall' ? 'min-h-[78vh]' : 'min-h-[64vh]'
       }`}
     >
       <Image src={image.url} alt={image.alt} fill priority sizes="100vw" className="object-cover" />

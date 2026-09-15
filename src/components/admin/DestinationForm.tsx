@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { adminApi, AdminApiError } from '@/lib/adminApi';
+import { useUnsavedChangesGuard } from '@/lib/useUnsavedChanges';
 import {
   TextField,
   TextArea,
@@ -46,6 +47,25 @@ export function DestinationForm({ destination }: { destination?: Destination }) 
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
+  const snapshot = JSON.stringify({
+    name,
+    country,
+    tagline,
+    categoryLabel,
+    overview,
+    heroImage,
+    cardImage,
+    highlights,
+    months,
+    bestTimeNote,
+    parks,
+    featured,
+    order,
+    status,
+  });
+  const initial = useRef(snapshot);
+  useUnsavedChangesGuard(snapshot !== initial.current && !saving && !deleting);
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
 
@@ -78,6 +98,7 @@ export function DestinationForm({ destination }: { destination?: Destination }) 
     try {
       if (destination) {
         await adminApi.patch(`/api/admin/destinations/${destination._id}`, body);
+        initial.current = snapshot;
         router.refresh();
       } else {
         const created = await adminApi.post<Destination>('/api/admin/destinations', body);

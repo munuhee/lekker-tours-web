@@ -1,5 +1,9 @@
-export function formatPrice(amount: number, currency = 'USD'): string {
-  return new Intl.NumberFormat('en-US', {
+/**
+ * Prices are quoted in Kenyan shillings. en-KE renders KES as "KSh 1,200";
+ * en-US would render the same value as the less familiar "KES 1,200".
+ */
+export function formatPrice(amount: number, currency = 'KES'): string {
+  return new Intl.NumberFormat('en-KE', {
     style: 'currency',
     currency,
     maximumFractionDigits: 0,

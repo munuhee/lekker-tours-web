@@ -1,12 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { adminApi, AdminApiError } from '@/lib/adminApi';
 
-export default function AdminLoginPage() {
+/** Only ever send the user to a path inside this app. */
+function safeReturnPath(raw: string | null): string {
+  if (!raw || !raw.startsWith('/') || raw.startsWith('//')) return '/admin';
+  return raw.startsWith('/admin/login') ? '/admin' : raw;
+}
+
+function AdminLoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const returnTo = safeReturnPath(searchParams.get('from'));
   const [state, setState] = useState<'idle' | 'sending' | 'error'>('idle');
   const [message, setMessage] = useState('');
 
@@ -22,7 +30,7 @@ export default function AdminLoginPage() {
         email: String(form.get('email') ?? ''),
         password: String(form.get('password') ?? ''),
       });
-      router.push('/admin');
+      router.push(returnTo);
       router.refresh();
     } catch (err) {
       setState('error');
@@ -97,5 +105,14 @@ export default function AdminLoginPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+/** useSearchParams needs a Suspense boundary during prerender. */
+export default function AdminLoginPage() {
+  return (
+    <Suspense>
+      <AdminLoginForm />
+    </Suspense>
   );
 }
