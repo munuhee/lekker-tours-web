@@ -2,6 +2,9 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getCurrentAdmin, adminCookieHeader } from '@/lib/auth';
 import { API_URL } from '@/lib/api';
+import { StatusPill } from '@/components/admin/StatusPill';
+import { formatDate } from '@/lib/format';
+import type { Enquiry, Tour } from '@/types';
 
 /**
  * `null` means the count could not be loaded — distinct from a real zero. A
@@ -10,28 +13,34 @@ import { API_URL } from '@/lib/api';
  */
 type Count = number | null;
 
-interface Counts {
+interface Dashboard {
   tours: Count;
   drafts: Count;
   destinations: Count;
   blog: Count;
+  blogDrafts: Count;
   testimonials: Count;
   faqs: Count;
   enquiries: Count;
   newEnquiries: Count;
+  recentEnquiries: Enquiry[];
+  recentTours: Tour[];
   failed: boolean;
 }
 
-async function loadCounts(cookie?: string): Promise<Counts> {
-  const unknown: Counts = {
+async function loadDashboard(cookie?: string): Promise<Dashboard> {
+  const unknown: Dashboard = {
     tours: null,
     drafts: null,
     destinations: null,
     blog: null,
+    blogDrafts: null,
     testimonials: null,
     faqs: null,
     enquiries: null,
     newEnquiries: null,
+    recentEnquiries: [],
+    recentTours: [],
     failed: true,
   };
   if (!cookie) return unknown;
@@ -46,14 +55,29 @@ async function loadCounts(cookie?: string): Promise<Counts> {
     }
   };
 
-  const [tours, drafts, destinations, blog, testimonials, faqs, enquiries] = await Promise.all([
+  const [
+    tours,
+    drafts,
+    destinations,
+    blog,
+    blogDrafts,
+    testimonials,
+    faqs,
+    enquiries,
+    recentEnquiries,
+    recentTours,
+  ] = await Promise.all([
     get('/api/admin/tours?limit=1'),
     get('/api/admin/tours?limit=1&status=draft'),
     get('/api/admin/destinations?limit=1'),
     get('/api/admin/blog?limit=1'),
+    get('/api/admin/blog?limit=1&status=draft'),
     get('/api/admin/testimonials?limit=1'),
     get('/api/admin/faqs?limit=1'),
     get('/api/admin/enquiries?limit=1'),
+    // What actually needs attention, rather than only how many there are.
+    get('/api/admin/enquiries?limit=5&sort=newest'),
+    get('/api/admin/tours?limit=5&sort=newest&status=draft'),
   ]);
 
   const responses = [tours, drafts, destinations, blog, testimonials, faqs, enquiries];
@@ -65,10 +89,13 @@ async function loadCounts(cookie?: string): Promise<Counts> {
     drafts: total(drafts),
     destinations: total(destinations),
     blog: total(blog),
+    blogDrafts: total(blogDrafts),
     testimonials: total(testimonials),
     faqs: total(faqs),
     enquiries: total(enquiries),
     newEnquiries: enquiries?.meta?.unreadCount ?? null,
+    recentEnquiries: (recentEnquiries?.data ?? []) as Enquiry[],
+    recentTours: (recentTours?.data ?? []) as Tour[],
     failed: responses.some((r) => r === null),
   };
 }
@@ -78,7 +105,7 @@ export default async function AdminDashboardPage() {
   if (!admin) redirect('/admin/login');
 
   const cookie = await adminCookieHeader();
-  const counts = await loadCounts(cookie);
+  const counts = await loadDashboard(cookie);
 
   const unread = counts.newEnquiries;
 
@@ -90,7 +117,12 @@ export default async function AdminDashboardPage() {
       href: '/admin/tours',
     },
     { label: 'Destinations', value: counts.destinations, href: '/admin/destinations' },
-    { label: 'Blog posts', value: counts.blog, href: '/admin/blog' },
+    {
+      label: 'Blog posts',
+      value: counts.blog,
+      hint: counts.blogDrafts === null ? undefined : `${counts.blogDrafts} in draft`,
+      href: '/admin/blog',
+    },
     { label: 'Testimonials', value: counts.testimonials, href: '/admin/testimonials' },
     { label: 'FAQs', value: counts.faqs, href: '/admin/faqs' },
     {
@@ -101,6 +133,27 @@ export default async function AdminDashboardPage() {
       highlight: unread !== null && unread > 0,
     },
   ];
+
+  // The one line that says what to do next, rather than what exists.
+  const needsAttention: Array<{ text: string; href: string }> = [];
+  if (unread !== null && unread > 0) {
+    needsAttention.push({
+      text: `${unread} unread ${unread === 1 ? 'enquiry' : 'enquiries'}`,
+      href: '/admin/enquiries?status=new',
+    });
+  }
+  if (counts.drafts !== null && counts.drafts > 0) {
+    needsAttention.push({
+      text: `${counts.drafts} unpublished ${counts.drafts === 1 ? 'tour' : 'tours'}`,
+      href: '/admin/tours?status=draft',
+    });
+  }
+  if (counts.blogDrafts !== null && counts.blogDrafts > 0) {
+    needsAttention.push({
+      text: `${counts.blogDrafts} unpublished ${counts.blogDrafts === 1 ? 'post' : 'posts'}`,
+      href: '/admin/blog?status=draft',
+    });
+  }
 
   return (
     <div>
@@ -119,6 +172,20 @@ export default async function AdminDashboardPage() {
           Some counts could not be loaded — the API may be unreachable. Figures shown as “—”
           are unknown, not zero.
         </p>
+      ) : null}
+
+      {needsAttention.length > 0 ? (
+        <div className="mb-6 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-card border border-amber-400 bg-amber-50 px-5 py-4">
+          <span className="text-sm font-medium text-forest-950">Needs attention:</span>
+          {needsAttention.map((item, i) => (
+            <span key={item.href} className="text-sm">
+              {i > 0 ? <span className="mr-3 text-muted">·</span> : null}
+              <Link href={item.href} className="text-forest-800 underline hover:text-amber-700">
+                {item.text}
+              </Link>
+            </span>
+          ))}
+        </div>
       ) : null}
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
@@ -149,7 +216,78 @@ export default async function AdminDashboardPage() {
         ))}
       </div>
 
-      <section className="mt-10 rounded-card border border-sand-200 bg-white p-7">
+      <div className="mt-6 grid gap-5 lg:grid-cols-2">
+        <section className="rounded-card border border-sand-200 bg-white p-6">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <h2 className="text-xl">Latest enquiries</h2>
+            <Link href="/admin/enquiries" className="text-xs text-forest-700 underline">
+              View all
+            </Link>
+          </div>
+
+          {counts.recentEnquiries.length === 0 ? (
+            <p className="py-6 text-center text-sm text-muted">
+              Nothing yet. Submissions from the contact and booking forms land here.
+            </p>
+          ) : (
+            <ul className="divide-y divide-sand-100">
+              {counts.recentEnquiries.map((e) => (
+                <li key={e._id}>
+                  <Link
+                    href="/admin/enquiries"
+                    className="flex items-center gap-3 py-3 transition-colors hover:bg-sand-50"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{e.name}</p>
+                      <p className="truncate text-xs text-muted">
+                        {e.type === 'booking' ? `Booking · ${e.tourTitle ?? '—'}` : 'Contact'} ·{' '}
+                        {formatDate(e.createdAt)}
+                      </p>
+                    </div>
+                    <StatusPill status={e.status} />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className="rounded-card border border-sand-200 bg-white p-6">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <h2 className="text-xl">Drafts to finish</h2>
+            <Link href="/admin/tours?status=draft" className="text-xs text-forest-700 underline">
+              View all
+            </Link>
+          </div>
+
+          {counts.recentTours.length === 0 ? (
+            <p className="py-6 text-center text-sm text-muted">
+              No unpublished tours — everything you have written is live.
+            </p>
+          ) : (
+            <ul className="divide-y divide-sand-100">
+              {counts.recentTours.map((t) => (
+                <li key={t._id}>
+                  <Link
+                    href={`/admin/tours/${t._id}`}
+                    className="flex items-center gap-3 py-3 transition-colors hover:bg-sand-50"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{t.title}</p>
+                      <p className="truncate text-xs text-muted">
+                        {t.durationDays}d · {t.countries?.join(', ')}
+                      </p>
+                    </div>
+                    <StatusPill status={t.status} />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
+
+      <section className="mt-6 rounded-card border border-sand-200 bg-white p-7">
         <h2 className="mb-4 text-xl">Quick actions</h2>
         <div className="flex flex-wrap gap-3">
           {[

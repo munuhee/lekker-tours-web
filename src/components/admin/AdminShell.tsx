@@ -14,15 +14,17 @@ const NAV = [
   { href: '/admin/blog', label: 'Blog posts' },
   { href: '/admin/testimonials', label: 'Testimonials' },
   { href: '/admin/faqs', label: 'FAQs' },
-  { href: '/admin/enquiries', label: 'Enquiries' },
+  { href: '/admin/enquiries', label: 'Enquiries', badge: 'unread' },
   { href: '/admin/settings', label: 'Site settings' },
 ];
 
 export function AdminShell({
   admin,
+  unreadCount = 0,
   children,
 }: {
   admin: AdminUser | null;
+  unreadCount?: number;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -99,17 +101,28 @@ export function AdminShell({
         <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-3" aria-label="Admin sections">
           {NAV.map((item) => {
             const active = item.exact ? pathname === item.href : pathname.startsWith(item.href);
+            const badge = item.badge === 'unread' && unreadCount > 0 ? unreadCount : 0;
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 onClick={() => setOpen(false)}
                 aria-current={active ? 'page' : undefined}
-                className={`rounded-lg px-4 py-2.5 text-sm transition-colors ${
+                className={`flex items-center justify-between gap-2 rounded-lg px-4 py-2.5 text-sm transition-colors ${
                   active ? 'bg-amber-500 text-forest-950' : 'text-sand-200/80 hover:bg-white/10'
                 }`}
               >
                 {item.label}
+                {badge > 0 ? (
+                  <span
+                    className={`inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-xs ${
+                      active ? 'bg-forest-950 text-amber-400' : 'bg-amber-500 text-forest-950'
+                    }`}
+                  >
+                    {badge > 99 ? '99+' : badge}
+                    <span className="sr-only"> unread</span>
+                  </span>
+                ) : null}
               </Link>
             );
           })}
@@ -167,11 +180,21 @@ export function AdminShell({
             type="button"
             onClick={() => setOpen(true)}
             aria-label="Open navigation"
-            className="text-forest-900"
+            aria-expanded={open}
+            className="-ml-2 flex h-11 w-11 items-center justify-center rounded-lg text-xl text-forest-900 transition-colors hover:bg-sand-100"
           >
             ☰
           </button>
           <span className="font-display text-lg">Lekker Admin</span>
+          {unreadCount > 0 ? (
+            <Link
+              href="/admin/enquiries"
+              className="ml-auto inline-flex items-center gap-1.5 rounded-full bg-amber-500 px-3 py-1 text-xs text-forest-950"
+            >
+              {unreadCount > 99 ? '99+' : unreadCount}
+              <span>unread</span>
+            </Link>
+          ) : null}
         </header>
 
         {/* Centre the content column and cap it: with a 256px sidebar on the

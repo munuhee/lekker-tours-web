@@ -14,7 +14,11 @@ import {
   FormActions,
 } from './FormControls';
 import { ImageUploader } from './ImageUploader';
+import { GalleryEditor } from './GalleryEditor';
 import { ItineraryEditor } from './ItineraryEditor';
+import { FormError } from './FormError';
+import { useConfirm } from './ConfirmDialog';
+import { useToast } from './Toasts';
 import type { Tour, Destination, ItineraryDay, ApiImage } from '@/types';
 
 const COUNTRIES = ['Kenya', 'Tanzania', 'Uganda', 'Rwanda', 'Zanzibar'] as const;
@@ -99,6 +103,9 @@ export function TourForm({
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
+  const [confirm, confirmDialog] = useConfirm();
+  const { toast } = useToast();
+
   // Leaving with unsaved edits used to discard a long form silently.
   const dirty = JSON.stringify(form) !== JSON.stringify(initial.current);
   useUnsavedChangesGuard(dirty && !saving && !deleting);
@@ -113,7 +120,10 @@ export function TourForm({
     setFieldErrors({});
 
     if (!form.heroImage?.url || !form.heroImage.alt) {
+      // Reported against the field itself, so the banner's jump-link lands on
+      // the uploader rather than leaving the admin to hunt for it.
       setError('A hero image with alt text is required.');
+      setFieldErrors({ heroImage: 'Upload an image and describe it.' });
       setSaving(false);
       return;
     }
@@ -163,8 +173,15 @@ export function TourForm({
         await adminApi.patch(`/api/admin/tours/${tour._id}`, payload);
         // The form now matches what is stored, so it is no longer dirty.
         initial.current = form;
+        toast({
+          message:
+            form.status === 'published'
+              ? 'Saved. The change is live on the public site.'
+              : 'Saved as a draft.',
+        });
       } else {
         const created = await adminApi.post<Tour>('/api/admin/tours', payload);
+        toast({ message: `"${form.title}" created.` });
         router.push(`/admin/tours/${created._id}`);
         router.refresh();
         return;
@@ -178,6 +195,7 @@ export function TourForm({
       } else {
         setError('Could not save the tour.');
       }
+      toast({ tone: 'error', message: 'The tour could not be saved.' });
     } finally {
       setSaving(false);
     }
@@ -185,26 +203,36 @@ export function TourForm({
 
   async function onDelete() {
     if (!tour) return;
-    if (!confirm(`Delete "${tour.title}"? This cannot be undone.`)) return;
+
+    const ok = await confirm({
+      title: 'Delete this tour?',
+      body: (
+        <>
+          <strong className="text-ink">{tour.title}</strong> will be permanently removed, along with
+          its itinerary and gallery. This cannot be undone.
+        </>
+      ),
+      confirmLabel: 'Delete tour',
+    });
+    if (!ok) return;
 
     setDeleting(true);
     try {
       await adminApi.remove(`/api/admin/tours/${tour._id}`);
+      toast({ message: `"${tour.title}" was deleted.` });
       router.push('/admin/tours');
       router.refresh();
     } catch (err) {
-      setError(err instanceof AdminApiError ? err.message : 'Could not delete the tour.');
+      const message = err instanceof AdminApiError ? err.message : 'Could not delete the tour.';
+      setError(message);
+      toast({ tone: 'error', message });
       setDeleting(false);
     }
   }
 
   return (
     <form onSubmit={onSubmit} className="space-y-5 pb-4">
-      {error ? (
-        <p role="alert" className="rounded-lg bg-maroon-600/10 px-4 py-3 text-sm text-maroon-700">
-          {error}
-        </p>
-      ) : null}
+      <FormError message={error} fieldErrors={fieldErrors} />
 
       <FormSection title="Basics">
         <TextField
@@ -360,35 +388,15 @@ export function TourForm({
 
       <FormSection title="Imagery">
         <ImageUploader
+          name="heroImage"
           label="Hero image"
           value={form.heroImage}
           onChange={(v) => set('heroImage', v)}
           required
+          error={fieldErrors.heroImage}
         />
 
-        <div className="space-y-3">
-          <p className="text-sm font-medium text-ink">Gallery</p>
-          {form.gallery.map((image, i) => (
-            <ImageUploader
-              key={i}
-              label={`Gallery image ${i + 1}`}
-              value={image}
-              onChange={(v) =>
-                set(
-                  'gallery',
-                  v ? form.gallery.map((g, j) => (j === i ? v : g)) : form.gallery.filter((_, j) => j !== i)
-                )
-              }
-            />
-          ))}
-          <button
-            type="button"
-            onClick={() => set('gallery', [...form.gallery, { url: '', alt: '' }])}
-            className="w-full rounded-lg border border-dashed border-sand-300 py-2.5 text-sm text-forest-700 hover:border-amber-500"
-          >
-            + Add gallery image
-          </button>
-        </div>
+        <GalleryEditor value={form.gallery} onChange={(v) => set('gallery', v)} />
       </FormSection>
 
       <FormSection title="Content">
@@ -479,7 +487,10 @@ export function TourForm({
         onDelete={tour ? onDelete : undefined}
         deleting={deleting}
         submitLabel={tour ? 'Save changes' : 'Create tour'}
+        dirty={dirty}
       />
+
+      {confirmDialog}
     </form>
   );
 }

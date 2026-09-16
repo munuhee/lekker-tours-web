@@ -15,6 +15,9 @@ import {
 } from './FormControls';
 import { ImageUploader } from './ImageUploader';
 import { ParksEditor } from './ParksEditor';
+import { FormError } from './FormError';
+import { useConfirm } from './ConfirmDialog';
+import { useToast } from './Toasts';
 import type { Destination, Park, ApiImage } from '@/types';
 
 const COUNTRIES = ['Kenya', 'Tanzania', 'Uganda', 'Rwanda', 'Zanzibar'] as const;
@@ -47,6 +50,9 @@ export function DestinationForm({ destination }: { destination?: Destination }) 
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
+  const [confirm, confirmDialog] = useConfirm();
+  const { toast } = useToast();
+
   const snapshot = JSON.stringify({
     name,
     country,
@@ -64,13 +70,22 @@ export function DestinationForm({ destination }: { destination?: Destination }) 
     status,
   });
   const initial = useRef(snapshot);
-  useUnsavedChangesGuard(snapshot !== initial.current && !saving && !deleting);
+  const dirty = snapshot !== initial.current;
+  useUnsavedChangesGuard(dirty && !saving && !deleting);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
 
     if (!heroImage?.url || !heroImage.alt || !cardImage?.url || !cardImage.alt) {
       setError('Both a hero image and a card image are required, each with alt text.');
+      setFieldErrors({
+        ...(!heroImage?.url || !heroImage.alt
+          ? { heroImage: 'Upload an image and describe it.' }
+          : {}),
+        ...(!cardImage?.url || !cardImage.alt
+          ? { cardImage: 'Upload an image and describe it.' }
+          : {}),
+      });
       return;
     }
 
@@ -99,9 +114,16 @@ export function DestinationForm({ destination }: { destination?: Destination }) 
       if (destination) {
         await adminApi.patch(`/api/admin/destinations/${destination._id}`, body);
         initial.current = snapshot;
+        toast({
+          message:
+            status === 'published'
+              ? 'Saved. The change is live on the public site.'
+              : 'Saved as a draft.',
+        });
         router.refresh();
       } else {
         const created = await adminApi.post<Destination>('/api/admin/destinations', body);
+        toast({ message: `${name} created.` });
         router.push(`/admin/destinations/${created._id}`);
         router.refresh();
       }
@@ -112,31 +134,44 @@ export function DestinationForm({ destination }: { destination?: Destination }) 
       } else {
         setError('Could not save the destination.');
       }
+      toast({ tone: 'error', message: 'The destination could not be saved.' });
     } finally {
       setSaving(false);
     }
   }
 
   async function onDelete() {
-    if (!destination || !confirm(`Delete "${destination.name}"? This cannot be undone.`)) return;
+    if (!destination) return;
+
+    const ok = await confirm({
+      title: 'Delete this destination?',
+      body: (
+        <>
+          <strong className="text-ink">{destination.name}</strong> will be permanently removed, along
+          with its parks. Tours linked to it will keep working. This cannot be undone.
+        </>
+      ),
+      confirmLabel: 'Delete destination',
+    });
+    if (!ok) return;
+
     setDeleting(true);
     try {
       await adminApi.remove(`/api/admin/destinations/${destination._id}`);
+      toast({ message: `${destination.name} was deleted.` });
       router.push('/admin/destinations');
       router.refresh();
     } catch (err) {
-      setError(err instanceof AdminApiError ? err.message : 'Could not delete.');
+      const message = err instanceof AdminApiError ? err.message : 'Could not delete.';
+      setError(message);
+      toast({ tone: 'error', message });
       setDeleting(false);
     }
   }
 
   return (
     <form onSubmit={onSubmit} className="space-y-5 pb-4">
-      {error ? (
-        <p role="alert" className="rounded-lg bg-maroon-600/10 px-4 py-3 text-sm text-maroon-700">
-          {error}
-        </p>
-      ) : null}
+      <FormError message={error} fieldErrors={fieldErrors} />
 
       <FormSection title="Basics">
         <TextField
@@ -258,11 +293,14 @@ export function DestinationForm({ destination }: { destination?: Destination }) 
       </FormSection>
 
       <FormActions
+        dirty={dirty}
         saving={saving}
         onDelete={destination ? onDelete : undefined}
         deleting={deleting}
         submitLabel={destination ? 'Save changes' : 'Create destination'}
       />
+
+      {confirmDialog}
     </form>
   );
 }

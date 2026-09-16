@@ -94,6 +94,23 @@ export const adminApi = {
 
   remove: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
 
+  /**
+   * Bulk endpoints. `resource` is the admin path segment ('tours', 'blog', …).
+   * One request for the whole selection rather than N sequential ones, so a
+   * batch cannot half-apply and the admin waits once.
+   */
+  bulkStatus: <T>(resource: string, ids: string[], status: string) =>
+    request<T>(`/api/admin/${resource}/bulk/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ ids, status }),
+    }),
+
+  bulkRemove: <T>(resource: string, ids: string[]) =>
+    request<T>(`/api/admin/${resource}/bulk`, {
+      method: 'DELETE',
+      body: JSON.stringify({ ids }),
+    }),
+
   async upload(file: File): Promise<{ url: string; filename: string }> {
     const form = new FormData();
     form.append('file', file);

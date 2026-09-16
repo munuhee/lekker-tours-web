@@ -5,6 +5,8 @@ import { adminApi, AdminApiError } from '@/lib/adminApi';
 import { useUnsavedChangesGuard } from '@/lib/useUnsavedChanges';
 import { TextField, TextArea, FormSection, FormActions } from '@/components/admin/FormControls';
 import { ImageUploader } from '@/components/admin/ImageUploader';
+import { FormError } from '@/components/admin/FormError';
+import { useToast } from '@/components/admin/Toasts';
 import type { SiteSettings } from '@/types';
 
 /**
@@ -41,6 +43,8 @@ export default function AdminSettingsPage() {
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [saved, setSaved] = useState(false);
+
+  const { toast } = useToast();
 
   const initial = useRef<string | null>(null);
 
@@ -83,6 +87,7 @@ export default function AdminSettingsPage() {
     const incomplete = values.some((v) => !v.title.trim() || !v.description.trim());
     if (incomplete) {
       setError('Each value needs both a title and a description, or remove it.');
+      toast({ tone: 'error', message: 'Settings could not be saved.' });
       setSaving(false);
       return;
     }
@@ -100,6 +105,7 @@ export default function AdminSettingsPage() {
       setSettings(updated);
       initial.current = JSON.stringify(updated);
       setSaved(true);
+      toast({ message: 'Settings saved. The public site updates within moments.' });
     } catch (err) {
       if (err instanceof AdminApiError) {
         setError(err.message);
@@ -107,6 +113,7 @@ export default function AdminSettingsPage() {
       } else {
         setError('Could not save settings.');
       }
+      toast({ tone: 'error', message: 'Settings could not be saved.' });
     } finally {
       setSaving(false);
     }
@@ -143,11 +150,9 @@ export default function AdminSettingsPage() {
         </p>
       </header>
 
-      {error ? (
-        <p role="alert" className="mb-5 rounded-lg bg-maroon-600/10 px-4 py-3 text-sm text-maroon-700">
-          {error}
-        </p>
-      ) : null}
+      <div className="mb-5">
+        <FormError message={error} fieldErrors={fieldErrors} />
+      </div>
       {saved ? (
         <p role="status" className="mb-5 rounded-lg bg-forest-100 px-4 py-3 text-sm text-forest-700">
           Saved. The public site will reflect this within moments.
@@ -461,7 +466,7 @@ export default function AdminSettingsPage() {
         </FormSection>
 
         <div className="xl:col-span-2">
-          <FormActions saving={saving} submitLabel="Save settings" />
+          <FormActions saving={saving} submitLabel="Save settings" dirty={dirty} />
         </div>
       </form>
     </div>

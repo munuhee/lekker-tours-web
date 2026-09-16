@@ -14,6 +14,9 @@ import {
   FormActions,
 } from './FormControls';
 import { ImageUploader } from './ImageUploader';
+import { FormError } from './FormError';
+import { useConfirm } from './ConfirmDialog';
+import { useToast } from './Toasts';
 import type { BlogPost, ApiImage } from '@/types';
 
 export function BlogForm({ post }: { post?: BlogPost }) {
@@ -31,6 +34,10 @@ export function BlogForm({ post }: { post?: BlogPost }) {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const [confirm, confirmDialog] = useConfirm();
+  const { toast } = useToast();
 
   const snapshot = JSON.stringify({
     title,
@@ -44,17 +51,20 @@ export function BlogForm({ post }: { post?: BlogPost }) {
     status,
   });
   const initial = useRef(snapshot);
-  useUnsavedChangesGuard(snapshot !== initial.current && !saving && !deleting);
+  const dirty = snapshot !== initial.current;
+  useUnsavedChangesGuard(dirty && !saving && !deleting);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!coverImage?.url || !coverImage.alt) {
       setError('A cover image with alt text is required.');
+      setFieldErrors({ coverImage: 'Upload an image and describe it.' });
       return;
     }
 
     setSaving(true);
     setError('');
+    setFieldErrors({});
 
     const body: Record<string, unknown> = {
       title,
@@ -72,39 +82,64 @@ export function BlogForm({ post }: { post?: BlogPost }) {
       if (post) {
         await adminApi.patch(`/api/admin/blog/${post._id}`, body);
         initial.current = snapshot;
+        toast({
+          message:
+            status === 'published'
+              ? 'Saved. The post is live in the Journal.'
+              : 'Saved as a draft.',
+        });
         router.refresh();
       } else {
         const created = await adminApi.post<BlogPost>('/api/admin/blog', body);
+        toast({ message: `"${title}" created.` });
         router.push(`/admin/blog/${created._id}`);
         router.refresh();
       }
     } catch (err) {
-      setError(err instanceof AdminApiError ? err.message : 'Could not save the post.');
+      if (err instanceof AdminApiError) {
+        setError(err.message);
+        if (err.details) setFieldErrors(err.details);
+      } else {
+        setError('Could not save the post.');
+      }
+      toast({ tone: 'error', message: 'The post could not be saved.' });
     } finally {
       setSaving(false);
     }
   }
 
   async function onDelete() {
-    if (!post || !confirm(`Delete "${post.title}"?`)) return;
+    if (!post) return;
+
+    const ok = await confirm({
+      title: 'Delete this post?',
+      body: (
+        <>
+          <strong className="text-ink">{post.title}</strong> will be permanently removed. This cannot
+          be undone.
+        </>
+      ),
+      confirmLabel: 'Delete post',
+    });
+    if (!ok) return;
+
     setDeleting(true);
     try {
       await adminApi.remove(`/api/admin/blog/${post._id}`);
+      toast({ message: `"${post.title}" was deleted.` });
       router.push('/admin/blog');
       router.refresh();
     } catch (err) {
-      setError(err instanceof AdminApiError ? err.message : 'Could not delete the post.');
+      const message = err instanceof AdminApiError ? err.message : 'Could not delete the post.';
+      setError(message);
+      toast({ tone: 'error', message });
       setDeleting(false);
     }
   }
 
   return (
     <form onSubmit={onSubmit} className="space-y-5 pb-4">
-      {error ? (
-        <p role="alert" className="rounded-lg bg-maroon-600/10 px-4 py-3 text-sm text-maroon-700">
-          {error}
-        </p>
-      ) : null}
+      <FormError message={error} fieldErrors={fieldErrors} />
 
       <FormSection title="Article">
         <TextField label="Title" name="title" value={title} onChange={setTitle} required />
@@ -162,11 +197,14 @@ export function BlogForm({ post }: { post?: BlogPost }) {
       </FormSection>
 
       <FormActions
+        dirty={dirty}
         saving={saving}
         onDelete={post ? onDelete : undefined}
         deleting={deleting}
         submitLabel={post ? 'Save changes' : 'Create post'}
       />
+
+      {confirmDialog}
     </form>
   );
 }

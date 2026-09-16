@@ -1,6 +1,6 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 
 const inputBase =
   'w-full rounded-lg border px-3 py-2.5 text-sm focus:outline-none disabled:bg-sand-50';
@@ -191,7 +191,15 @@ export function CheckboxField({
   );
 }
 
-/** Edits a string[] as one item per line — simpler than a repeater for short lists. */
+/**
+ * Edits a string[] as one item per line — simpler than a repeater for short
+ * lists.
+ *
+ * The text is held locally while editing. Trimming and dropping blank lines on
+ * every keystroke meant pressing Enter to start a new bullet deleted the empty
+ * line as fast as it was typed, bouncing the cursor back. Lines are now only
+ * cleaned on blur, which is also when the parent's array is rewritten.
+ */
 export function ListField({
   label,
   value,
@@ -207,21 +215,33 @@ export function ListField({
   hint?: string;
   rows?: number;
 }) {
+  const [draft, setDraft] = useState<string | null>(null);
+
+  // While focused the draft wins; otherwise mirror whatever the parent holds,
+  // so an external reset (loading a record) still shows through.
+  const text = draft ?? value.join('\n');
+
+  function commit(next: string) {
+    setDraft(null);
+    const lines = next
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean);
+    // Avoid a pointless parent update when nothing actually changed.
+    if (lines.length !== value.length || lines.some((line, i) => line !== value[i])) {
+      onChange(lines);
+    }
+  }
+
   return (
     <div>
       <label className="mb-1.5 block text-sm font-medium text-ink">{label}</label>
       <textarea
         rows={rows}
-        value={value.join('\n')}
+        value={text}
         placeholder={placeholder}
-        onChange={(e) =>
-          onChange(
-            e.target.value
-              .split('\n')
-              .map((line) => line.trim())
-              .filter(Boolean)
-          )
-        }
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={(e) => commit(e.target.value)}
         className={`${inputBase} border-sand-300 focus:border-amber-500`}
       />
       <p className="mt-1 text-xs text-muted">{hint ?? 'One per line.'}</p>
@@ -255,21 +275,31 @@ export function FormActions({
   onDelete,
   deleting,
   submitLabel = 'Save',
+  dirty,
 }: {
   saving: boolean;
   onDelete?: () => void;
   deleting?: boolean;
   submitLabel?: string;
+  /** Shows an unsaved-changes marker next to the button. */
+  dirty?: boolean;
 }) {
   return (
     <div className="sticky bottom-0 flex items-center justify-between gap-3 border-t border-sand-200 bg-sand-100/95 py-4 backdrop-blur">
-      <button
-        type="submit"
-        disabled={saving}
-        className="h-11 rounded-full bg-amber-500 px-8 text-sm font-medium text-forest-950 transition-colors hover:bg-amber-400 disabled:opacity-60"
-      >
-        {saving ? 'Saving…' : submitLabel}
-      </button>
+      <div className="flex items-center gap-3">
+        <button
+          type="submit"
+          disabled={saving}
+          className="h-11 rounded-full bg-amber-500 px-8 text-sm font-medium text-forest-950 transition-colors hover:bg-amber-400 disabled:opacity-60"
+        >
+          {saving ? 'Saving…' : submitLabel}
+        </button>
+        {/* The guard already blocks navigation; this says so before the admin
+            tries to leave. */}
+        {dirty && !saving ? (
+          <span className="text-xs text-muted">Unsaved changes</span>
+        ) : null}
+      </div>
 
       {onDelete ? (
         <button

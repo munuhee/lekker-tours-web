@@ -1,12 +1,18 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { Suspense, useEffect, useState, useCallback } from 'react';
 import { adminApi, AdminApiError } from '@/lib/adminApi';
+import { useListParams } from '@/lib/useListParams';
 import { DataTable, type Column } from '@/components/admin/DataTable';
 import { StatusPill } from '@/components/admin/StatusPill';
 import { ListPageHeader } from '@/components/admin/ListPageHeader';
+import { ListToolbar } from '@/components/admin/ListToolbar';
 import { Pagination } from '@/components/admin/Pagination';
+import { BulkBar, BulkButton } from '@/components/admin/BulkBar';
+import { RowActions, RowButton } from '@/components/admin/RowActions';
 import { Modal } from '@/components/admin/Modal';
+import { useConfirm } from '@/components/admin/ConfirmDialog';
+import { useToast } from '@/components/admin/Toasts';
 import type { Testimonial, PageMeta } from '@/types';
 
 const BLANK = {
@@ -22,21 +28,42 @@ const BLANK = {
 
 const PER_PAGE = 25;
 
-export default function AdminTestimonialsPage() {
+const SORTS = [
+  { value: 'newest', label: 'Newest' },
+  { value: 'author-asc', label: 'Reviewer, A-Z' },
+  { value: 'rating-desc', label: 'Highest rated' },
+];
+
+function AdminTestimonialsView() {
+  const { params, setParams } = useListParams({ page: '1', q: '', sort: 'newest', status: '' });
+  const page = Number(params.page) || 1;
+
   const [items, setItems] = useState<Testimonial[]>([]);
   const [meta, setMeta] = useState<PageMeta | undefined>();
-  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [editing, setEditing] = useState<Partial<Testimonial> | null>(null);
   const [saving, setSaving] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [checked, setChecked] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
+
+  const [confirm, confirmDialog] = useConfirm();
+  const { toast } = useToast();
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
+      const query = new URLSearchParams({
+        limit: String(PER_PAGE),
+        page: String(page),
+        sort: params.sort,
+      });
+      if (params.q) query.set('q', params.q);
+      if (params.status) query.set('status', params.status);
+
       const { items: rows, meta: pageMeta } = await adminApi.list<Testimonial>(
-        `/api/admin/testimonials?limit=${PER_PAGE}&page=${page}`
+        `/api/admin/testimonials?${query}`
       );
       setItems(rows);
       setMeta(pageMeta);
@@ -46,11 +73,21 @@ export default function AdminTestimonialsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page]);
+  }, [page, params.q, params.sort, params.status]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  // Rows that left the view must not stay selected.
+  useEffect(() => {
+    setChecked((current) => {
+      if (current.size === 0) return current;
+      const visible = new Set(items.map((t) => t._id));
+      const next = new Set([...current].filter((id) => visible.has(id)));
+      return next.size === current.size ? current : next;
+    });
+  }, [items]);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -70,34 +107,57 @@ export default function AdminTestimonialsPage() {
     };
 
     try {
+      const isNew = !editing._id;
       if (editing._id) await adminApi.patch(`/api/admin/testimonials/${editing._id}`, body);
       else await adminApi.post('/api/admin/testimonials', body);
       setEditing(null);
+      toast({ message: isNew ? 'Testimonial created.' : 'Testimonial saved.' });
       await load();
     } catch (err) {
-      setError(err instanceof AdminApiError ? err.message : 'Could not save the testimonial.');
+      const message =
+        err instanceof AdminApiError ? err.message : 'Could not save the testimonial.';
+      setError(message);
+      toast({ tone: 'error', message });
     } finally {
       setSaving(false);
     }
   }
 
-  async function remove(id: string) {
-    if (!confirm('Delete this testimonial?')) return;
-    setBusyId(id);
+  async function remove(t: Testimonial) {
+    const ok = await confirm({
+      title: 'Delete this testimonial?',
+      body: (
+        <>
+          The review from <strong className="text-ink">{t.authorName}</strong> will be permanently
+          removed. This cannot be undone.
+        </>
+      ),
+      confirmLabel: 'Delete testimonial',
+    });
+    if (!ok) return;
+
+    setBusyId(t._id);
     try {
-      await adminApi.remove(`/api/admin/testimonials/${id}`);
+      await adminApi.remove(`/api/admin/testimonials/${t._id}`);
       setError('');
+      toast({ message: 'Testimonial deleted.' });
       await load();
     } catch (err) {
-      setError(err instanceof AdminApiError ? err.message : 'Could not delete.');
+      const message = err instanceof AdminApiError ? err.message : 'Could not delete.';
+      setError(message);
+      toast({ tone: 'error', message });
     } finally {
       setBusyId(null);
     }
   }
 
-  async function toggle(t: Testimonial) {
+  async function applyStatus(
+    t: Testimonial,
+    next: 'draft' | 'published',
+    { silent = false } = {}
+  ) {
     setBusyId(t._id);
-    const next = t.status === 'published' ? 'draft' : 'published';
+    const previous = t.status;
     try {
       const updated = await adminApi.patch<Testimonial>(
         `/api/admin/testimonials/${t._id}/status`,
@@ -105,10 +165,90 @@ export default function AdminTestimonialsPage() {
       );
       setItems((list) => list.map((x) => (x._id === t._id ? { ...x, ...updated } : x)));
       setError('');
+
+      if (!silent) {
+        toast({
+          message:
+            next === 'published'
+              ? `${t.authorName}'s review is now live.`
+              : `${t.authorName}'s review moved to draft.`,
+          action: {
+            label: 'Undo',
+            onAct: () => applyStatus({ ...t, status: next }, previous, { silent: true }),
+          },
+        });
+      }
     } catch (err) {
-      setError(err instanceof AdminApiError ? err.message : 'Could not change status.');
+      const message = err instanceof AdminApiError ? err.message : 'Could not change status.';
+      setError(message);
+      toast({ tone: 'error', message });
     } finally {
       setBusyId(null);
+    }
+  }
+
+  async function bulkStatus(status: 'draft' | 'published') {
+    const ids = [...checked];
+    const previous = new Map(items.map((t) => [t._id, t.status]));
+    setBulkBusy(true);
+    try {
+      await adminApi.bulkStatus('testimonials', ids, status);
+      toast({
+        message: `${ids.length} ${ids.length === 1 ? 'testimonial' : 'testimonials'} ${
+          status === 'published' ? 'published' : 'moved to draft'
+        }.`,
+        action: {
+          label: 'Undo',
+          onAct: async () => {
+            const toPublish = ids.filter((id) => previous.get(id) === 'published');
+            const toDraft = ids.filter((id) => previous.get(id) === 'draft');
+            try {
+              if (toPublish.length)
+                await adminApi.bulkStatus('testimonials', toPublish, 'published');
+              if (toDraft.length) await adminApi.bulkStatus('testimonials', toDraft, 'draft');
+              await load();
+            } catch {
+              toast({ tone: 'error', message: 'Could not undo that change.' });
+            }
+          },
+        },
+      });
+      setChecked(new Set());
+      await load();
+    } catch (err) {
+      const message =
+        err instanceof AdminApiError ? err.message : 'Could not update those testimonials.';
+      setError(message);
+      toast({ tone: 'error', message });
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
+  async function bulkDelete() {
+    const ids = [...checked];
+    const ok = await confirm({
+      title: `Delete ${ids.length} ${ids.length === 1 ? 'testimonial' : 'testimonials'}?`,
+      body: 'They will be permanently removed. This cannot be undone.',
+      confirmLabel: `Delete ${ids.length}`,
+    });
+    if (!ok) return;
+
+    setBulkBusy(true);
+    try {
+      await adminApi.bulkRemove('testimonials', ids);
+      toast({
+        message: `${ids.length} ${ids.length === 1 ? 'testimonial' : 'testimonials'} deleted.`,
+      });
+      setChecked(new Set());
+      await load();
+    } catch (err) {
+      const message =
+        err instanceof AdminApiError ? err.message : 'Could not delete those testimonials.';
+      setError(message);
+      toast({ tone: 'error', message });
+    } finally {
+      setBulkBusy(false);
     }
   }
 
@@ -116,6 +256,8 @@ export default function AdminTestimonialsPage() {
     {
       key: 'author',
       header: 'Reviewer',
+      primary: true,
+      sort: { asc: 'author-asc', desc: 'author-asc' },
       render: (t) => (
         <button type="button" onClick={() => setEditing(t)} className="text-left">
           <span className="block font-medium hover:underline">{t.authorName}</span>
@@ -128,37 +270,48 @@ export default function AdminTestimonialsPage() {
       header: 'Quote',
       render: (t) => <span className="line-clamp-2 block max-w-md text-xs text-muted">{t.quote}</span>,
     },
-    { key: 'rating', header: 'Rating', render: (t) => <span className="text-xs">{t.rating} ★</span> },
+    {
+      key: 'rating',
+      header: 'Rating',
+      sort: { asc: 'rating-desc', desc: 'rating-desc' },
+      render: (t) => <span className="text-xs">{t.rating} ★</span>,
+    },
     { key: 'status', header: 'Status', render: (t) => <StatusPill status={t.status} /> },
     {
       key: 'actions',
       header: '',
       className: 'text-right',
       render: (t) => (
-        <div className="flex items-center justify-end gap-3 text-xs">
-          <button
-            type="button"
-            onClick={() => toggle(t)}
+        <RowActions>
+          <RowButton
+            onClick={() => applyStatus(t, t.status === 'published' ? 'draft' : 'published')}
             disabled={busyId === t._id}
-            className="text-forest-700 underline disabled:opacity-50"
+            title={t.status === 'published' ? 'Remove from the homepage' : 'Show on the homepage'}
           >
             {t.status === 'published' ? 'Unpublish' : 'Publish'}
-          </button>
-          <button type="button" onClick={() => setEditing(t)} className="text-forest-700 underline">
+          </RowButton>
+          <RowButton onClick={() => setEditing(t)} title="Edit this testimonial">
             Edit
-          </button>
-          <button
-            type="button"
-            onClick={() => remove(t._id)}
+          </RowButton>
+          <RowButton
+            onClick={() => remove(t)}
             disabled={busyId === t._id}
-            className="text-maroon-600 underline disabled:opacity-50"
+            destructive
+            title="Delete this testimonial"
+            icon="&#128465;"
           >
-            Delete
-          </button>
-        </div>
+            <span className="sr-only">Delete</span>
+          </RowButton>
+        </RowActions>
       ),
     },
   ];
+
+  const resultLabel = meta
+    ? params.q
+      ? `${meta.total} ${meta.total === 1 ? 'result' : 'results'} for "${params.q}"`
+      : `${meta.total} ${meta.total === 1 ? 'testimonial' : 'testimonials'}`
+    : undefined;
 
   return (
     <div>
@@ -177,6 +330,36 @@ export default function AdminTestimonialsPage() {
         </button>
       </div>
 
+      <ListToolbar
+        search={params.q}
+        onSearchChange={(q) => setParams({ q }, { replace: true })}
+        searchPlaceholder="Search by reviewer or quote"
+        sort={params.sort}
+        sorts={SORTS}
+        onSortChange={(sort) => setParams({ sort })}
+        busy={loading}
+        resultLabel={resultLabel}
+        filters={[
+          { value: '', label: 'All' },
+          { value: 'published', label: 'Published' },
+          { value: 'draft', label: 'Drafts' },
+        ].map((f) => (
+          <button
+            key={f.value}
+            type="button"
+            onClick={() => setParams({ status: f.value })}
+            aria-pressed={params.status === f.value}
+            className={`h-9 rounded-full px-4 text-xs transition-colors ${
+              params.status === f.value
+                ? 'bg-forest-900 text-sand-50'
+                : 'border border-sand-300 text-muted hover:border-forest-900'
+            }`}
+          >
+            {f.label}
+          </button>
+        ))}
+      />
+
       {error ? (
         <p role="alert" className="mb-5 rounded-lg bg-maroon-600/10 px-4 py-3 text-sm text-maroon-700">
           {error}
@@ -188,11 +371,36 @@ export default function AdminTestimonialsPage() {
         rows={items}
         rowKey={(t) => t._id}
         loading={loading}
-        emptyTitle="No testimonials yet"
-        emptyMessage="Add reviews from travellers who have been on your trips."
+        sort={params.sort}
+        onSortChange={(sort) => setParams({ sort })}
+        selected={checked}
+        onSelectedChange={setChecked}
+        bulkBar={
+          <BulkBar count={checked.size} onClear={() => setChecked(new Set())} busy={bulkBusy}>
+            <BulkButton onClick={() => bulkStatus('published')} disabled={bulkBusy}>
+              Publish
+            </BulkButton>
+            <BulkButton onClick={() => bulkStatus('draft')} disabled={bulkBusy}>
+              Unpublish
+            </BulkButton>
+            <BulkButton onClick={bulkDelete} disabled={bulkBusy} destructive>
+              Delete
+            </BulkButton>
+          </BulkBar>
+        }
+        emptyTitle={params.q ? 'No matching testimonials' : 'No testimonials yet'}
+        emptyMessage={
+          params.q
+            ? `Nothing matched "${params.q}". Try a shorter search, or clear it to see them all.`
+            : 'Add reviews from travellers who have been on your trips.'
+        }
       />
 
-      <Pagination meta={meta} onPageChange={setPage} busy={loading} />
+      <Pagination
+        meta={meta}
+        onPageChange={(next) => setParams({ page: String(next) })}
+        busy={loading}
+      />
 
       {editing ? (
         <Modal
@@ -337,6 +545,17 @@ export default function AdminTestimonialsPage() {
           </>
         </Modal>
       ) : null}
+
+      {confirmDialog}
     </div>
+  );
+}
+
+/** useSearchParams needs a Suspense boundary during prerender. */
+export default function AdminTestimonialsPage() {
+  return (
+    <Suspense>
+      <AdminTestimonialsView />
+    </Suspense>
   );
 }

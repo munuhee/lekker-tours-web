@@ -1,30 +1,57 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { Suspense, useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { adminApi, AdminApiError } from '@/lib/adminApi';
+import { useListParams } from '@/lib/useListParams';
 import { DataTable, type Column } from '@/components/admin/DataTable';
 import { StatusPill } from '@/components/admin/StatusPill';
 import { ListPageHeader } from '@/components/admin/ListPageHeader';
+import { ListToolbar } from '@/components/admin/ListToolbar';
 import { Pagination } from '@/components/admin/Pagination';
+import { BulkBar, BulkButton } from '@/components/admin/BulkBar';
+import { RowActions, RowButton, RowLink } from '@/components/admin/RowActions';
+import { useConfirm } from '@/components/admin/ConfirmDialog';
+import { useToast } from '@/components/admin/Toasts';
 import type { Destination, PageMeta } from '@/types';
 
 const PER_PAGE = 25;
 
-export default function AdminDestinationsPage() {
+const SORTS = [
+  { value: 'order-asc', label: 'Display order' },
+  { value: 'name-asc', label: 'Name, A–Z' },
+  { value: 'newest', label: 'Newest' },
+];
+
+function AdminDestinationsView() {
+  const { params, setParams } = useListParams({ page: '1', q: '', sort: 'order-asc', status: '' });
+  const page = Number(params.page) || 1;
+
   const [items, setItems] = useState<Destination[]>([]);
   const [meta, setMeta] = useState<PageMeta | undefined>();
-  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
+
+  const [confirm, confirmDialog] = useConfirm();
+  const { toast } = useToast();
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
+      const query = new URLSearchParams({
+        limit: String(PER_PAGE),
+        page: String(page),
+        sort: params.sort,
+      });
+      if (params.q) query.set('q', params.q);
+      if (params.status) query.set('status', params.status);
+
       const { items: rows, meta: pageMeta } = await adminApi.list<Destination>(
-        `/api/admin/destinations?limit=${PER_PAGE}&page=${page}`
+        `/api/admin/destinations?${query}`
       );
       setItems(rows);
       setMeta(pageMeta);
@@ -34,15 +61,24 @@ export default function AdminDestinationsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page]);
+  }, [page, params.q, params.sort, params.status]);
 
   useEffect(() => {
     load();
   }, [load]);
 
-  async function toggle(d: Destination) {
+  useEffect(() => {
+    setSelected((current) => {
+      if (current.size === 0) return current;
+      const visible = new Set(items.map((d) => d._id));
+      const next = new Set([...current].filter((id) => visible.has(id)));
+      return next.size === current.size ? current : next;
+    });
+  }, [items]);
+
+  async function applyStatus(d: Destination, next: 'draft' | 'published', { silent = false } = {}) {
     setBusyId(d._id);
-    const next = d.status === 'published' ? 'draft' : 'published';
+    const previous = d.status;
     try {
       const updated = await adminApi.patch<Destination>(
         `/api/admin/destinations/${d._id}/status`,
@@ -50,24 +86,116 @@ export default function AdminDestinationsPage() {
       );
       setItems((list) => list.map((x) => (x._id === d._id ? { ...x, ...updated } : x)));
       setError('');
+
+      if (!silent) {
+        toast({
+          message:
+            next === 'published' ? `${d.name} is now live.` : `${d.name} is no longer public.`,
+          action: {
+            label: 'Undo',
+            onAct: () => applyStatus({ ...d, status: next }, previous, { silent: true }),
+          },
+        });
+      }
     } catch (err) {
-      setError(err instanceof AdminApiError ? err.message : 'Could not change status.');
+      const message = err instanceof AdminApiError ? err.message : 'Could not change status.';
+      setError(message);
+      toast({ tone: 'error', message });
     } finally {
       setBusyId(null);
     }
   }
 
-  async function remove(id: string) {
-    if (!confirm('Delete this destination? Tours linked to it will keep working.')) return;
-    setBusyId(id);
+  async function remove(d: Destination) {
+    const ok = await confirm({
+      title: 'Delete this destination?',
+      body: (
+        <>
+          <strong className="text-ink">{d.name}</strong> will be permanently removed, along with its
+          parks. Tours linked to it will keep working. This cannot be undone.
+        </>
+      ),
+      confirmLabel: 'Delete destination',
+    });
+    if (!ok) return;
+
+    setBusyId(d._id);
     try {
-      await adminApi.remove(`/api/admin/destinations/${id}`);
+      await adminApi.remove(`/api/admin/destinations/${d._id}`);
       setError('');
+      toast({ message: `${d.name} was deleted.` });
       await load();
     } catch (err) {
-      setError(err instanceof AdminApiError ? err.message : 'Could not delete.');
+      const message = err instanceof AdminApiError ? err.message : 'Could not delete.';
+      setError(message);
+      toast({ tone: 'error', message });
     } finally {
       setBusyId(null);
+    }
+  }
+
+  async function bulkStatus(status: 'draft' | 'published') {
+    const ids = [...selected];
+    const previous = new Map(items.map((d) => [d._id, d.status]));
+    setBulkBusy(true);
+    try {
+      await adminApi.bulkStatus('destinations', ids, status);
+      toast({
+        message: `${ids.length} ${ids.length === 1 ? 'destination' : 'destinations'} ${
+          status === 'published' ? 'published' : 'unpublished'
+        }.`,
+        action: {
+          label: 'Undo',
+          onAct: async () => {
+            const toPublish = ids.filter((id) => previous.get(id) === 'published');
+            const toDraft = ids.filter((id) => previous.get(id) === 'draft');
+            try {
+              if (toPublish.length)
+                await adminApi.bulkStatus('destinations', toPublish, 'published');
+              if (toDraft.length) await adminApi.bulkStatus('destinations', toDraft, 'draft');
+              await load();
+            } catch {
+              toast({ tone: 'error', message: 'Could not undo that change.' });
+            }
+          },
+        },
+      });
+      setSelected(new Set());
+      await load();
+    } catch (err) {
+      const message =
+        err instanceof AdminApiError ? err.message : 'Could not update those destinations.';
+      setError(message);
+      toast({ tone: 'error', message });
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
+  async function bulkDelete() {
+    const ids = [...selected];
+    const ok = await confirm({
+      title: `Delete ${ids.length} ${ids.length === 1 ? 'destination' : 'destinations'}?`,
+      body: 'They will be permanently removed, along with their parks. Tours linked to them will keep working. This cannot be undone.',
+      confirmLabel: `Delete ${ids.length}`,
+    });
+    if (!ok) return;
+
+    setBulkBusy(true);
+    try {
+      await adminApi.bulkRemove('destinations', ids);
+      toast({
+        message: `${ids.length} ${ids.length === 1 ? 'destination' : 'destinations'} deleted.`,
+      });
+      setSelected(new Set());
+      await load();
+    } catch (err) {
+      const message =
+        err instanceof AdminApiError ? err.message : 'Could not delete those destinations.';
+      setError(message);
+      toast({ tone: 'error', message });
+    } finally {
+      setBulkBusy(false);
     }
   }
 
@@ -75,6 +203,8 @@ export default function AdminDestinationsPage() {
     {
       key: 'name',
       header: 'Destination',
+      primary: true,
+      sort: { asc: 'name-asc', desc: 'name-desc' },
       render: (d) => (
         <div className="flex items-center gap-3">
           <div className="relative h-11 w-16 shrink-0 overflow-hidden rounded bg-sand-100">
@@ -106,30 +236,36 @@ export default function AdminDestinationsPage() {
       header: '',
       className: 'text-right',
       render: (d) => (
-        <div className="flex items-center justify-end gap-3 text-xs">
-          <button
-            type="button"
-            onClick={() => toggle(d)}
+        <RowActions>
+          <RowButton
+            onClick={() => applyStatus(d, d.status === 'published' ? 'draft' : 'published')}
             disabled={busyId === d._id}
-            className="text-forest-700 underline disabled:opacity-50"
+            title={d.status === 'published' ? 'Remove from the public site' : 'Make live'}
           >
             {d.status === 'published' ? 'Unpublish' : 'Publish'}
-          </button>
-          <Link href={`/admin/destinations/${d._id}`} className="text-forest-700 underline">
+          </RowButton>
+          <RowLink href={`/admin/destinations/${d._id}`} title="Edit this destination">
             Edit
-          </Link>
-          <button
-            type="button"
-            onClick={() => remove(d._id)}
+          </RowLink>
+          <RowButton
+            onClick={() => remove(d)}
             disabled={busyId === d._id}
-            className="text-maroon-600 underline disabled:opacity-50"
+            destructive
+            title="Delete this destination"
+            icon="🗑"
           >
-            Delete
-          </button>
-        </div>
+            <span className="sr-only">Delete</span>
+          </RowButton>
+        </RowActions>
       ),
     },
   ];
+
+  const resultLabel = meta
+    ? params.q
+      ? `${meta.total} ${meta.total === 1 ? 'result' : 'results'} for “${params.q}”`
+      : `${meta.total} ${meta.total === 1 ? 'destination' : 'destinations'}`
+    : undefined;
 
   return (
     <div>
@@ -138,6 +274,36 @@ export default function AdminDestinationsPage() {
         description="Countries and the parks within them, shown on the destinations pages."
         newHref="/admin/destinations/new"
         newLabel="New destination"
+      />
+
+      <ListToolbar
+        search={params.q}
+        onSearchChange={(q) => setParams({ q }, { replace: true })}
+        searchPlaceholder="Search by name or tagline"
+        sort={params.sort}
+        sorts={SORTS}
+        onSortChange={(sort) => setParams({ sort })}
+        busy={loading}
+        resultLabel={resultLabel}
+        filters={[
+          { value: '', label: 'All' },
+          { value: 'published', label: 'Published' },
+          { value: 'draft', label: 'Drafts' },
+        ].map((f) => (
+          <button
+            key={f.value}
+            type="button"
+            onClick={() => setParams({ status: f.value })}
+            aria-pressed={params.status === f.value}
+            className={`h-9 rounded-full px-4 text-xs transition-colors ${
+              params.status === f.value
+                ? 'bg-forest-900 text-sand-50'
+                : 'border border-sand-300 text-muted hover:border-forest-900'
+            }`}
+          >
+            {f.label}
+          </button>
+        ))}
       />
 
       {error ? (
@@ -151,19 +317,65 @@ export default function AdminDestinationsPage() {
         rows={items}
         rowKey={(d) => d._id}
         loading={loading}
-        emptyTitle="No destinations yet"
-        emptyMessage="Add the countries you operate in, each with its parks and best-time guidance."
+        sort={params.sort}
+        onSortChange={(sort) => setParams({ sort })}
+        selected={selected}
+        onSelectedChange={setSelected}
+        bulkBar={
+          <BulkBar count={selected.size} onClear={() => setSelected(new Set())} busy={bulkBusy}>
+            <BulkButton onClick={() => bulkStatus('published')} disabled={bulkBusy}>
+              Publish
+            </BulkButton>
+            <BulkButton onClick={() => bulkStatus('draft')} disabled={bulkBusy}>
+              Unpublish
+            </BulkButton>
+            <BulkButton onClick={bulkDelete} disabled={bulkBusy} destructive>
+              Delete
+            </BulkButton>
+          </BulkBar>
+        }
+        emptyTitle={params.q ? 'No matching destinations' : 'No destinations yet'}
+        emptyMessage={
+          params.q
+            ? `Nothing matched “${params.q}”. Try a shorter search, or clear it to see them all.`
+            : 'Add the countries you operate in, each with its parks and best-time guidance.'
+        }
         emptyAction={
-          <Link
-            href="/admin/destinations/new"
-            className="inline-block rounded-full bg-amber-500 px-6 py-2.5 text-sm text-forest-950"
-          >
-            New destination
-          </Link>
+          params.q ? (
+            <button
+              type="button"
+              onClick={() => setParams({ q: '' })}
+              className="inline-block rounded-full border border-sand-300 px-6 py-2.5 text-sm transition-colors hover:border-forest-900"
+            >
+              Clear search
+            </button>
+          ) : (
+            <Link
+              href="/admin/destinations/new"
+              className="inline-block rounded-full bg-amber-500 px-6 py-2.5 text-sm text-forest-950"
+            >
+              New destination
+            </Link>
+          )
         }
       />
 
-      <Pagination meta={meta} onPageChange={setPage} busy={loading} />
+      <Pagination
+        meta={meta}
+        onPageChange={(next) => setParams({ page: String(next) })}
+        busy={loading}
+      />
+
+      {confirmDialog}
     </div>
+  );
+}
+
+/** useSearchParams needs a Suspense boundary during prerender. */
+export default function AdminDestinationsPage() {
+  return (
+    <Suspense>
+      <AdminDestinationsView />
+    </Suspense>
   );
 }
