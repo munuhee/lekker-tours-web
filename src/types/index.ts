@@ -153,6 +153,8 @@ export interface SiteSettings {
   };
   socials: Partial<Record<'facebook' | 'instagram' | 'x' | 'youtube' | 'tiktok', string>>;
   newsletter: { heading: string; blurb: string };
+  /** The homepage film. Empty until an admin sets one; a placeholder shows instead. */
+  video: { youtubeId?: string };
   footerBlurb: string;
   seo: { defaultTitle: string; defaultDescription: string; ogImage?: string };
 }

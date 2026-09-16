@@ -32,9 +32,39 @@ const LIMITS = {
   newsletterHeading: 120,
   newsletterBlurb: 400,
   footerBlurb: 600,
+  youtubeId: 11,
   seoTitle: 70,
   seoDescription: 200,
 } as const;
+
+/**
+ * Takes whatever the admin pasted and returns a bare video ID.
+ *
+ * The API wants the 11-character ID, but the natural thing to paste is the URL
+ * from the browser bar — in any of several shapes (watch?v=, youtu.be/, /embed/,
+ * /shorts/, with or without extra query parameters). Rather than reject those
+ * and make the admin dissect a URL by hand, pull the ID out here. Anything that
+ * is not recognisably a YouTube URL is passed through untouched so the server's
+ * validation message is what they see.
+ */
+function extractYoutubeId(input: string): string {
+  const value = input.trim();
+  if (!value) return '';
+
+  const patterns = [
+    /[?&]v=([A-Za-z0-9_-]{11})/, // watch?v=ID
+    /youtu\.be\/([A-Za-z0-9_-]{11})/, // youtu.be/ID
+    /\/embed\/([A-Za-z0-9_-]{11})/, // /embed/ID
+    /\/shorts\/([A-Za-z0-9_-]{11})/, // /shorts/ID
+  ];
+
+  for (const pattern of patterns) {
+    const match = value.match(pattern);
+    if (match) return match[1];
+  }
+
+  return value;
+}
 
 export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<SiteSettings | null>(null);
@@ -99,6 +129,7 @@ export default function AdminSettingsPage() {
         contact: settings.contact,
         socials: settings.socials,
         newsletter: settings.newsletter,
+        video: settings.video ?? {},
         footerBlurb: settings.footerBlurb,
         seo: settings.seo,
       });
@@ -442,6 +473,21 @@ export default function AdminSettingsPage() {
             maxLength={LIMITS.newsletterBlurb}
             error={fieldErrors['newsletter.blurb']}
             onChange={(v) => patch('newsletter', { ...settings.newsletter, blurb: v })}
+          />
+        </FormSection>
+
+        <FormSection
+          title="Homepage film"
+          description="The video embedded on the homepage. Leave blank to show the placeholder."
+        >
+          <TextField
+            label="YouTube video ID"
+            name="videoYoutubeId"
+            value={settings.video?.youtubeId ?? ''}
+            maxLength={LIMITS.youtubeId}
+            error={fieldErrors['video.youtubeId']}
+            hint="The 11-character ID, e.g. dQw4w9WgXcQ. Pasting a full YouTube link also works."
+            onChange={(v) => patch('video', { youtubeId: extractYoutubeId(v) })}
           />
         </FormSection>
 

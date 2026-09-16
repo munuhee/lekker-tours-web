@@ -29,6 +29,9 @@ const FALLBACK: SiteSettings = {
     supportHours: '24/7 Global Service',
   },
   socials: {},
+  // No video in the fallback: if the API is down we cannot know which film the
+  // admin chose, and the placeholder is the honest thing to show.
+  video: {},
   newsletter: {
     heading: 'Stories from the bush',
     blurb: 'Occasional dispatches on wildlife, seasons and new expeditions. No noise.',

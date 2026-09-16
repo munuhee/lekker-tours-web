@@ -33,7 +33,7 @@ export default async function HomePage() {
       <Hero hero={settings.hero} socials={settings.socials} />
       <CredentialsStrip />
       <WhyUs values={settings.values} phone={settings.contact.phone} />
-      <VideoSection />
+      <VideoSection youtubeId={settings.video?.youtubeId} />
       <FeaturedTours tours={tours.items} />
       <CountriesGrid destinations={destinations.items} />
       <PromoBand />
