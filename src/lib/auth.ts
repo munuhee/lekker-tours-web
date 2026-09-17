@@ -7,8 +7,20 @@ export interface AdminUser {
   id: string;
   email: string;
   name: string;
+  /** Legacy coarse role, kept in step with the assigned role by the API. */
   role: 'admin' | 'editor';
+  /** Name of the assigned role, or null for an account predating the roles table. */
+  roleName?: string | null;
+  /** Resolved permission strings — what the dashboard shows is driven by these. */
+  permissions?: string[];
   lastLoginAt?: string;
+}
+
+/** True when the signed-in admin holds every one of `required`. */
+export function can(admin: AdminUser | null, ...required: string[]): boolean {
+  if (!admin) return false;
+  const held = admin.permissions ?? [];
+  return required.every((p) => held.includes(p));
 }
 
 /**

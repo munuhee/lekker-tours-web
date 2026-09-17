@@ -199,3 +199,67 @@ export interface ApiFailure {
   success: false;
   error: { message: string; code: string; details?: Record<string, string> };
 }
+
+/* ---------- admin users, roles and audit ---------- */
+
+export interface PermissionDef {
+  key: string;
+  label: string;
+  hint?: string;
+}
+
+export interface PermissionGroup {
+  key: string;
+  label: string;
+  permissions: PermissionDef[];
+}
+
+export interface Role {
+  _id: string;
+  id: string;
+  name: string;
+  description: string;
+  permissions: string[];
+  /** The Administrator role: always holds everything and cannot be edited. */
+  locked: boolean;
+  userCount?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminUser {
+  _id: string;
+  id: string;
+  email: string;
+  name: string;
+  role: { id: string; name: string; locked: boolean } | null;
+  roleId: string | null;
+  lastLoginAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AuditEntry {
+  _id: string;
+  id: string;
+  actorId: string | null;
+  actorEmail: string;
+  action: string;
+  targetType: string | null;
+  targetId: string | null;
+  targetLabel: string | null;
+  changes: { before?: Record<string, unknown>; after?: Record<string, unknown> };
+  ip: string | null;
+  createdAt: string;
+}
+
+/** Shape returned by /api/auth/me — drives what the dashboard shows. */
+export interface CurrentAdmin {
+  _id: string;
+  id: string;
+  email: string;
+  name: string;
+  roleName: string | null;
+  permissions: string[];
+  lastLoginAt?: string | null;
+}

@@ -7,15 +7,23 @@ import { usePathname } from 'next/navigation';
 import { adminApi } from '@/lib/adminApi';
 import type { AdminUser } from '@/lib/auth';
 
+/**
+ * `needs` is the permission required to see the entry. Entries without one are
+ * shown to everyone who can reach the dashboard at all. Hiding a link is a
+ * convenience, not the control — every route is enforced by the API.
+ */
 const NAV = [
   { href: '/admin', label: 'Dashboard', exact: true },
-  { href: '/admin/tours', label: 'Tours' },
-  { href: '/admin/destinations', label: 'Destinations' },
-  { href: '/admin/blog', label: 'Blog posts' },
-  { href: '/admin/testimonials', label: 'Testimonials' },
-  { href: '/admin/faqs', label: 'FAQs' },
-  { href: '/admin/enquiries', label: 'Enquiries', badge: 'unread' },
-  { href: '/admin/settings', label: 'Site settings' },
+  { href: '/admin/tours', label: 'Tours', needs: 'tours.view' },
+  { href: '/admin/destinations', label: 'Destinations', needs: 'destinations.view' },
+  { href: '/admin/blog', label: 'Blog posts', needs: 'blog.view' },
+  { href: '/admin/testimonials', label: 'Testimonials', needs: 'testimonials.view' },
+  { href: '/admin/faqs', label: 'FAQs', needs: 'faqs.view' },
+  { href: '/admin/enquiries', label: 'Enquiries', badge: 'unread', needs: 'enquiries.view' },
+  { href: '/admin/settings', label: 'Site settings', needs: 'settings.edit' },
+  { href: '/admin/users', label: 'Users', needs: 'users.view' },
+  { href: '/admin/roles', label: 'Roles', needs: 'users.view' },
+  { href: '/admin/audit', label: 'Audit log', needs: 'audit.view' },
 ];
 
 export function AdminShell({
@@ -52,6 +60,14 @@ export function AdminShell({
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [open]);
+
+  // An account predating the roles table reports no permissions at all. Hiding
+  // every link would strand it, so an absent list falls back to showing
+  // everything and letting the API refuse what it must.
+  const permissions = admin?.permissions;
+  const visibleNav = permissions
+    ? NAV.filter((item) => !item.needs || permissions.includes(item.needs))
+    : NAV;
 
   // The login page renders without the shell chrome.
   if (pathname === '/admin/login') {
@@ -99,7 +115,7 @@ export function AdminShell({
 
         {/* Scrolls internally if the nav ever outgrows a short viewport. */}
         <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-3" aria-label="Admin sections">
-          {NAV.map((item) => {
+          {visibleNav.map((item) => {
             const active = item.exact ? pathname === item.href : pathname.startsWith(item.href);
             const badge = item.badge === 'unread' && unreadCount > 0 ? unreadCount : 0;
             return (
