@@ -19,6 +19,7 @@ const NAV = [
   { href: '/', label: 'Home' },
   { href: '/destinations', label: 'Destinations', dropdown: COUNTRIES },
   { href: '/tours', label: 'Our Safaris' },
+  { href: '/services', label: 'Services' },
   { href: '/blog', label: 'Journal' },
   { href: '/about', label: 'About Us' },
   { href: '/contact', label: 'Contact Us' },

@@ -38,7 +38,7 @@ export function ValuesGrid({ values }: { values: SiteSettings['values'] }) {
         <SectionHeading
           eyebrow="Why Lekker"
           title="The pulse of the wilderness, the precision of Nairobi"
-          description="Decades of local knowledge, and a team that answers the phone at any hour."
+          description="Local destination knowledge, responsive service and carefully selected travel partners."
         />
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">

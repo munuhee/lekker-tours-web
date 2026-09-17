@@ -7,10 +7,42 @@ import { Reveal } from '@/components/ui/Reveal';
 import { getSettings } from '@/lib/settings';
 
 export const metadata: Metadata = {
-  title: 'The Lekker Spirit',
+  title: 'About Us',
   description:
-    'Based in the heart of Nairobi, Lekker Tours and Travel is your gateway to the raw majesty of East Africa — built on local expertise, round-the-clock support and respect for the land.',
+    'Lekker Tours and Travels is a Kenya-based tours and travel company creating memorable, well-planned journeys for individuals, families, groups, organisations and international visitors.',
 };
+
+/**
+ * Section 06 of the company profile — "Why Lekker". Deliberately claims only
+ * what the profile claims: no fleet sizes, guide headcounts or years in
+ * operation, none of which have been confirmed.
+ */
+const WHY_LEKKER = [
+  {
+    title: 'Local knowledge',
+    body: 'Kenya is our home market. We build itineraries around real travel conditions, destination character and practical logistics.',
+  },
+  {
+    title: 'Personalised planning',
+    body: 'We listen first and then build a trip around the traveller’s priorities, rather than forcing every client into the same itinerary.',
+  },
+  {
+    title: 'One point of contact',
+    body: 'We aim to simplify planning by coordinating the different elements of a journey through one travel partner.',
+  },
+  {
+    title: 'Flexible options',
+    body: 'We can work across different travel styles, budgets, group sizes and trip lengths.',
+  },
+  {
+    title: 'Clear communication',
+    body: 'We explain itinerary details, inclusions, exclusions and important travel information before confirmation.',
+  },
+  {
+    title: 'Partner network',
+    body: 'We work with accommodation, transport, activity and destination partners to build complete travel solutions.',
+  },
+];
 
 export default async function AboutPage() {
   const settings = await getSettings();
@@ -18,45 +50,49 @@ export default async function AboutPage() {
   return (
     <>
       <PageBanner
-        title="The Lekker Spirit"
-        subtitle="Where the pulse of the African wilderness meets the precision of Nairobi expertise."
+        title="About Lekker Tours and Travels"
+        subtitle="Explore • Discover • Experience"
         image={{
           url: '/images/maasai-warriors-landscape.jpg',
           alt: 'Guides walking out across open savanna at golden hour',
         }}
         crumbs={[
           { href: '/', label: 'Home' },
-          { href: '/about', label: 'The Lekker Spirit' },
+          { href: '/about', label: 'About Us' },
         ]}
       />
 
       <section className="bg-sand-50 py-16 md:py-24">
         <div className="container-page grid items-center gap-12 lg:grid-cols-2">
           <div>
-            <p className="mb-3 text-xs uppercase tracking-[0.28em] text-amber-600">Our story</p>
+            <p className="mb-3 text-xs uppercase tracking-[0.28em] text-amber-600">
+              Company overview
+            </p>
             <h2 className="mb-6 text-3xl leading-tight md:text-4xl">
-              A gateway to the raw majesty of East Africa
+              Making travel simple, enjoyable and memorable
             </h2>
             <div className="space-y-5 text-base leading-relaxed text-muted">
               <p>
-                Witness the Big Five roam across golden plains where the spirit of the savanna comes
-                alive. Based in the vibrant heart of Nairobi, Lekker Tours and Travel serves as your
-                gateway to the raw majesty of Kenya and the wider region.
+                Lekker Tours and Travels is a Kenya-based tours and travel company focused on making
+                travel simple, enjoyable and memorable. We design and coordinate travel experiences
+                that connect people with Kenya’s wildlife, landscapes, beaches, culture and cities,
+                while also supporting practical travel needs.
               </p>
               <p>
-                Every journey is designed to immerse you in the theatre of nature, where the iconic
-                landscapes of East Africa tell a story of untamed beauty. We bridge modern comfort
-                with untamed adventure — a vehicle that gets you to the sighting, a camp that lets
-                you sleep well afterwards, and a guide who knows why both matter.
+                Our approach combines personal service, practical planning and flexible travel
+                solutions. Whether a client is looking for a weekend safari, a family holiday, a
+                group excursion, a beach escape, an airport transfer or a tailor-made itinerary, our
+                goal is to provide one dependable point of contact from planning to completion.
               </p>
               <p>
-                We work from Agip House on Haile Selassie Avenue, and our team is reachable at any
-                hour of any day, from your first enquiry to your final sunset.
+                We serve both the domestic and international market, with Kenya as our core
+                destination and East Africa as a natural area for expansion. Our office is at{' '}
+                {settings.contact.addressLine} in {settings.contact.city}.
               </p>
             </div>
 
             <div className="mt-9 flex flex-wrap gap-3">
-              <ButtonLink href="/tours">Explore expeditions</ButtonLink>
+              <ButtonLink href="/services">Our services</ButtonLink>
               <ButtonLink href="/contact" variant="ghost">
                 Talk to us →
               </ButtonLink>
@@ -86,25 +122,47 @@ export default async function AboutPage() {
         </div>
       </section>
 
+      <section className="bg-white py-16 md:py-24">
+        <div className="container-page grid gap-6 md:grid-cols-2">
+          <Reveal>
+            <article className="h-full rounded-card border border-sand-200 bg-sand-50 p-8">
+              <p className="mb-3 text-xs uppercase tracking-[0.28em] text-amber-600">Our vision</p>
+              <p className="text-base leading-relaxed text-muted">
+                To become a trusted and customer-focused travel company known for memorable
+                experiences, dependable service and meaningful connections across Kenya and East
+                Africa.
+              </p>
+            </article>
+          </Reveal>
+          <Reveal delay={90}>
+            <article className="h-full rounded-card border border-sand-200 bg-sand-50 p-8">
+              <p className="mb-3 text-xs uppercase tracking-[0.28em] text-amber-600">Our mission</p>
+              <p className="text-base leading-relaxed text-muted">
+                To design and coordinate accessible, enjoyable and well-organised travel experiences
+                by combining local destination knowledge, responsive customer service and carefully
+                selected travel partners.
+              </p>
+            </article>
+          </Reveal>
+        </div>
+      </section>
+
       {settings.values?.length ? (
         <section className="bg-forest-900 py-16 md:py-24">
           <div className="container-page">
             <SectionHeading
               eyebrow="What we stand for"
-              title="How we work"
+              title="Our core values"
               tone="light"
-              description="Three commitments that shape every itinerary we write."
+              description="The commitments that shape how we plan, communicate and travel."
             />
 
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
               {settings.values.map((value, i) => (
-                <Reveal key={value.title} delay={i * 90}>
+                <Reveal key={value.title} delay={(i % 3) * 90}>
                   <article className="h-full rounded-card border border-white/10 bg-forest-800/40 p-7">
-                    <span
-                      aria-hidden
-                      className="mb-4 block font-display text-3xl text-amber-400"
-                    >
-                      0{i + 1}
+                    <span aria-hidden className="mb-4 block font-display text-3xl text-amber-400">
+                      {String(i + 1).padStart(2, '0')}
                     </span>
                     <h3 className="mb-3 text-lg text-sand-50">{value.title}</h3>
                     <p className="text-sm leading-relaxed text-sand-200/75">{value.description}</p>
@@ -119,27 +177,13 @@ export default async function AboutPage() {
       <section className="bg-white py-16 md:py-24">
         <div className="container-page">
           <SectionHeading
-            eyebrow="The Big Five guarantee"
-            title="Routes optimised for the icons of the savanna"
-            description="Lions, leopards, elephants, rhinos and buffaloes. We plan around where they actually are — and we tell you honestly when a sighting cannot be promised."
+            eyebrow="Why Lekker"
+            title="What you can expect when you plan with us"
           />
 
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-            {[
-              {
-                title: 'Expert local guides',
-                body: 'Decades of tracking experience between them, and the judgement to know when to wait and when to move.',
-              },
-              {
-                title: 'Custom 4x4 vehicles',
-                body: 'Built for visibility — pop-up roofs, a guaranteed window seat for every guest, and charging on board.',
-              },
-              {
-                title: 'Authentic bush meals',
-                body: 'Breakfast at sunrise in the field, lunch under an acacia, dinner beneath more stars than you have seen.',
-              },
-            ].map((item, i) => (
-              <Reveal key={item.title} delay={i * 90}>
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {WHY_LEKKER.map((item, i) => (
+              <Reveal key={item.title} delay={(i % 3) * 90}>
                 <article className="h-full rounded-card border border-sand-200 bg-sand-50 p-7">
                   <h3 className="mb-3 text-lg">{item.title}</h3>
                   <p className="text-sm leading-relaxed text-muted">{item.body}</p>
@@ -147,16 +191,25 @@ export default async function AboutPage() {
               </Reveal>
             ))}
           </div>
+
+          <div className="mt-10 rounded-card border border-sand-200 bg-sand-50 p-7">
+            <h3 className="mb-3 text-lg">Our travel philosophy</h3>
+            <p className="max-w-3xl text-sm leading-relaxed text-muted">
+              We believe a good itinerary is more than a list of places. It should balance travel
+              time, comfort, activities, budget and the traveller’s personal interests. We therefore
+              encourage clients to choose experiences that match how they want to travel rather than
+              simply following a standard package.
+            </p>
+          </div>
         </div>
       </section>
 
       <section className="bg-forest-950 py-16 md:py-20">
         <div className="container-page text-center">
-          <h2 className="mx-auto max-w-2xl text-3xl text-sand-50">
-            Ready when you are
-          </h2>
+          <h2 className="mx-auto max-w-2xl text-3xl text-sand-50">Ready when you are</h2>
           <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-sand-200/75">
-            {settings.contact.supportHours} — from the first enquiry to the final sunset of your tour.
+            {settings.contact.supportHours} — from the first enquiry to the final sunset of your
+            tour.
           </p>
           <div className="mt-8">
             <ButtonLink href="/contact" size="lg">

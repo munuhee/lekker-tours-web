@@ -20,13 +20,13 @@ const FALLBACK: SiteSettings = {
   },
   values: [],
   contact: {
-    phone: '+254 100 201 950',
-    whatsapp: '+254 100 201 950',
+    phone: '+254 705 356 161',
+    whatsapp: '+254 705 356 161',
     email: 'lekkertours@gmail.com',
     addressLine: 'Agip House, Haile Selassie Avenue',
     poBox: 'P.O Box 13689-00200',
     city: 'Nairobi, Kenya',
-    supportHours: '24/7 Global Service',
+    supportHours: 'We aim to respond to enquiries as quickly as practical',
   },
   socials: {},
   // No video in the fallback: if the API is down we cannot know which film the

@@ -8,8 +8,10 @@ const EXPLORE = [
   { href: '/tours', label: 'Our Safaris' },
   { href: '/tours?category=WeekendEscape', label: 'Weekend Escapes' },
   { href: '/destinations', label: 'Destinations' },
+  { href: '/services', label: 'Services' },
   { href: '/blog', label: 'Journal' },
   { href: '/about', label: 'About Us' },
+  { href: '/partners', label: 'Partnerships' },
   { href: '/contact', label: 'Contact Us' },
 ];
 

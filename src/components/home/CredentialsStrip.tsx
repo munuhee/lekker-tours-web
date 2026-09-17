@@ -3,15 +3,16 @@
  *
  * NOTE: these are plain descriptive claims, deliberately NOT trade-body or
  * review-platform logos — those would assert accreditations Lekker may not
- * hold. Replace with their real affiliations and licence numbers, or remove,
- * before launch.
+ * hold. For the same reason there is no "licensed operator" line: the company
+ * profile lists the TRA licence as still to be confirmed. Add it here once the
+ * licence number is in hand.
  */
 const CREDENTIALS = [
-  'Licensed Kenyan operator',
   'Nairobi-based specialists',
-  '24/7 traveller support',
+  'Personalised planning',
+  'One point of contact',
   'Transparent pricing',
-  'Conservation-minded',
+  'Responsible travel',
 ];
 
 export function CredentialsStrip() {

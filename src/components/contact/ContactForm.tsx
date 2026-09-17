@@ -59,8 +59,8 @@ export function ContactForm() {
         </span>
         <h3 className="mb-3 text-2xl">Your enquiry is on its way</h3>
         <p className="mx-auto max-w-md text-sm leading-relaxed text-muted">
-          Our specialists will respond within 24 hours to begin your custom itinerary. If it is
-          urgent, call us — we answer at any hour.
+          We will respond as quickly as practical to begin building your itinerary. If it is
+          urgent, please call or WhatsApp us directly.
         </p>
       </div>
     );
