@@ -15,21 +15,24 @@ export const metadata: Metadata = {
 };
 
 /**
- * Drives the nav badge. The dashboard card already highlighted unread
- * enquiries, but from any other page there was no sign new ones had arrived.
+ * Drives the nav badge: enquiries nobody has picked up, plus any that are past
+ * their follow-up date. This counts work outstanding rather than mail unopened
+ * — the old "unread" number went to zero the moment someone glanced at a row,
+ * which said nothing about whether the customer had been answered.
+ *
  * A failure returns 0 rather than throwing — a missing badge is a smaller
  * problem than an admin area that will not render.
  */
-async function loadUnreadCount(cookie?: string): Promise<number> {
+async function loadAttentionCount(cookie?: string): Promise<number> {
   if (!cookie) return 0;
   try {
-    const res = await fetch(`${API_URL}/api/admin/enquiries?limit=1&status=new`, {
+    const res = await fetch(`${API_URL}/api/admin/enquiries?limit=1`, {
       headers: { cookie },
       cache: 'no-store',
     });
     if (!res.ok) return 0;
-    const payload = await res.json();
-    return payload?.meta?.unreadCount ?? 0;
+    const meta = (await res.json())?.meta;
+    return (meta?.unassignedCount ?? 0) + (meta?.overdueCount ?? 0);
   } catch {
     return 0;
   }
@@ -38,12 +41,12 @@ async function loadUnreadCount(cookie?: string): Promise<number> {
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   // Null on the login page too; AdminShell renders a bare frame in that case.
   const admin = await getCurrentAdmin();
-  const unreadCount = admin ? await loadUnreadCount(await adminCookieHeader()) : 0;
+  const attentionCount = admin ? await loadAttentionCount(await adminCookieHeader()) : 0;
 
   return (
     <div className="min-h-screen bg-sand-100">
       <ToastProvider>
-        <AdminShell admin={admin} unreadCount={unreadCount}>
+        <AdminShell admin={admin} attentionCount={attentionCount}>
           {children}
         </AdminShell>
       </ToastProvider>

@@ -174,8 +174,54 @@ export interface Enquiry {
   travelDate?: string;
   guests?: { adults: number; children: number; infants: number };
   totalGuests?: number | null;
-  status: 'new' | 'read' | 'responded' | 'archived';
+  status: EnquiryStatus;
   adminNotes?: string;
+  createdAt: string;
+
+  /** Human-readable handle, e.g. "ENQ-2609-0042". */
+  reference?: string;
+
+  assignee?: AdminSummary | null;
+  assignedAt?: string | null;
+
+  lastContactedAt?: string | null;
+  followUpAt?: string | null;
+  closedAt?: string | null;
+
+  /** Computed by the API: past its follow-up date and still open. */
+  isOverdue?: boolean;
+
+  /** Present on the detail response only, newest first. */
+  events?: EnquiryEvent[];
+}
+
+/** The enquiry pipeline, in order. `won`/`lost` are terminal. */
+export type EnquiryStatus = 'new' | 'assigned' | 'in_progress' | 'quoted' | 'won' | 'lost';
+
+export interface AdminSummary {
+  _id: string;
+  id: string;
+  name: string;
+  email: string;
+}
+
+export type EnquiryEventType =
+  | 'created'
+  | 'status_change'
+  | 'assigned'
+  | 'unassigned'
+  | 'note'
+  | 'contacted';
+
+export interface EnquiryEvent {
+  _id: string;
+  id: string;
+  type: EnquiryEventType;
+  /** Null for the public form's `created` entry. */
+  actorName?: string | null;
+  summary: string;
+  note?: string | null;
+  meta?: Record<string, unknown>;
   createdAt: string;
 }
 
@@ -186,7 +232,15 @@ export interface PageMeta {
   totalPages: number;
   hasNextPage: boolean;
   hasPrevPage: boolean;
-  unreadCount?: number;
+  /**
+   * Enquiry list only. `unassignedCount` is work nobody has picked up and
+   * `overdueCount` is work past its follow-up date; together they replace the
+   * old `unreadCount`, which counted mail nobody had opened rather than work
+   * nobody had done.
+   */
+  statusCounts?: Partial<Record<EnquiryStatus, number>>;
+  unassignedCount?: number;
+  overdueCount?: number;
 }
 
 export interface ApiSuccess<T> {

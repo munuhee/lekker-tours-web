@@ -19,7 +19,7 @@ const NAV = [
   { href: '/admin/blog', label: 'Blog posts', needs: 'blog.view' },
   { href: '/admin/testimonials', label: 'Testimonials', needs: 'testimonials.view' },
   { href: '/admin/faqs', label: 'FAQs', needs: 'faqs.view' },
-  { href: '/admin/enquiries', label: 'Enquiries', badge: 'unread', needs: 'enquiries.view' },
+  { href: '/admin/enquiries', label: 'Enquiries', badge: 'attention', needs: 'enquiries.view' },
   { href: '/admin/settings', label: 'Site settings', needs: 'settings.edit' },
   { href: '/admin/users', label: 'Users', needs: 'users.view' },
   { href: '/admin/roles', label: 'Roles', needs: 'users.view' },
@@ -28,11 +28,12 @@ const NAV = [
 
 export function AdminShell({
   admin,
-  unreadCount = 0,
+  attentionCount = 0,
   children,
 }: {
   admin: AdminUser | null;
-  unreadCount?: number;
+  /** Enquiries unassigned or past their follow-up date — work, not unread mail. */
+  attentionCount?: number;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -117,7 +118,7 @@ export function AdminShell({
         <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-3" aria-label="Admin sections">
           {visibleNav.map((item) => {
             const active = item.exact ? pathname === item.href : pathname.startsWith(item.href);
-            const badge = item.badge === 'unread' && unreadCount > 0 ? unreadCount : 0;
+            const badge = item.badge === 'attention' && attentionCount > 0 ? attentionCount : 0;
             return (
               <Link
                 key={item.href}
@@ -136,7 +137,7 @@ export function AdminShell({
                     }`}
                   >
                     {badge > 99 ? '99+' : badge}
-                    <span className="sr-only"> unread</span>
+                    <span className="sr-only"> needing attention</span>
                   </span>
                 ) : null}
               </Link>
@@ -202,13 +203,13 @@ export function AdminShell({
             ☰
           </button>
           <span className="font-display text-lg">Lekker Admin</span>
-          {unreadCount > 0 ? (
+          {attentionCount > 0 ? (
             <Link
               href="/admin/enquiries"
               className="ml-auto inline-flex items-center gap-1.5 rounded-full bg-amber-500 px-3 py-1 text-xs text-forest-950"
             >
-              {unreadCount > 99 ? '99+' : unreadCount}
-              <span>unread</span>
+              {attentionCount > 99 ? '99+' : attentionCount}
+              <span>to action</span>
             </Link>
           ) : null}
         </header>

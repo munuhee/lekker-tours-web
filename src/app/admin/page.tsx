@@ -22,7 +22,8 @@ interface Dashboard {
   testimonials: Count;
   faqs: Count;
   enquiries: Count;
-  newEnquiries: Count;
+  unassignedEnquiries: Count;
+  overdueEnquiries: Count;
   recentEnquiries: Enquiry[];
   recentTours: Tour[];
   failed: boolean;
@@ -38,7 +39,8 @@ async function loadDashboard(cookie?: string): Promise<Dashboard> {
     testimonials: null,
     faqs: null,
     enquiries: null,
-    newEnquiries: null,
+    unassignedEnquiries: null,
+    overdueEnquiries: null,
     recentEnquiries: [],
     recentTours: [],
     failed: true,
@@ -93,7 +95,8 @@ async function loadDashboard(cookie?: string): Promise<Dashboard> {
     testimonials: total(testimonials),
     faqs: total(faqs),
     enquiries: total(enquiries),
-    newEnquiries: enquiries?.meta?.unreadCount ?? null,
+    unassignedEnquiries: enquiries?.meta?.unassignedCount ?? null,
+    overdueEnquiries: enquiries?.meta?.overdueCount ?? null,
     recentEnquiries: (recentEnquiries?.data ?? []) as Enquiry[],
     recentTours: (recentTours?.data ?? []) as Tour[],
     failed: responses.some((r) => r === null),
@@ -107,7 +110,8 @@ export default async function AdminDashboardPage() {
   const cookie = await adminCookieHeader();
   const counts = await loadDashboard(cookie);
 
-  const unread = counts.newEnquiries;
+  const unassigned = counts.unassignedEnquiries;
+  const overdue = counts.overdueEnquiries;
 
   const cards = [
     {
@@ -128,18 +132,29 @@ export default async function AdminDashboardPage() {
     {
       label: 'Enquiries',
       value: counts.enquiries,
-      hint: unread === null ? undefined : unread > 0 ? `${unread} unread` : 'All read',
+      hint:
+        unassigned === null
+          ? undefined
+          : unassigned > 0
+            ? `${unassigned} unassigned`
+            : 'All picked up',
       href: '/admin/enquiries',
-      highlight: unread !== null && unread > 0,
+      highlight: unassigned !== null && unassigned > 0,
     },
   ];
 
   // The one line that says what to do next, rather than what exists.
   const needsAttention: Array<{ text: string; href: string }> = [];
-  if (unread !== null && unread > 0) {
+  if (overdue !== null && overdue > 0) {
     needsAttention.push({
-      text: `${unread} unread ${unread === 1 ? 'enquiry' : 'enquiries'}`,
-      href: '/admin/enquiries?status=new',
+      text: `${overdue} ${overdue === 1 ? 'enquiry' : 'enquiries'} overdue a follow-up`,
+      href: '/admin/enquiries?overdue=true',
+    });
+  }
+  if (unassigned !== null && unassigned > 0) {
+    needsAttention.push({
+      text: `${unassigned} unassigned ${unassigned === 1 ? 'enquiry' : 'enquiries'}`,
+      href: '/admin/enquiries?assignee=unassigned',
     });
   }
   if (counts.drafts !== null && counts.drafts > 0) {
