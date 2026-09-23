@@ -1,6 +1,6 @@
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import { WhatsAppButton } from '@/components/layout/WhatsAppButton';
+import { ContactLauncher } from '@/components/layout/ContactLauncher';
 import { getSettings } from '@/lib/settings';
 
 export default async function PublicLayout({ children }: { children: React.ReactNode }) {
@@ -12,7 +12,7 @@ export default async function PublicLayout({ children }: { children: React.React
       <Header phone={settings.contact.phone} />
       <main className="flex-1">{children}</main>
       <Footer settings={settings} />
-      {whatsapp ? <WhatsAppButton phone={whatsapp} /> : null}
+      {whatsapp ? <ContactLauncher phone={whatsapp} /> : null}
     </div>
   );
 }
