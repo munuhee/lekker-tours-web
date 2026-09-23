@@ -34,7 +34,17 @@ function redirectToLogin(): never {
   throw new AdminApiError('Your session has expired. Please sign in again.', 401);
 }
 
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+/**
+ * `signingIn` opts out of the 401-means-expired-session redirect. On the login
+ * form a 401 is the answer to the question being asked ("are these the right
+ * credentials?"), not a lapsed session, and redirecting swallows the API's
+ * message and clears the form instead of explaining what was wrong.
+ */
+async function request<T>(
+  path: string,
+  init: RequestInit = {},
+  { signingIn = false }: { signingIn?: boolean } = {}
+): Promise<T> {
   let res: Response;
   try {
     res = await fetch(`${API_URL}${path}`, {
@@ -50,7 +60,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     throw new AdminApiError('Could not reach the API. Is the server running?', 0);
   }
 
-  if (res.status === 401) redirectToLogin();
+  if (res.status === 401 && !signingIn) redirectToLogin();
 
   const payload = await res.json().catch(() => null);
 
@@ -86,8 +96,8 @@ export const adminApi = {
     };
   },
 
-  post: <T>(path: string, body: unknown) =>
-    request<T>(path, { method: 'POST', body: JSON.stringify(body) }),
+  post: <T>(path: string, body: unknown, opts?: { signingIn?: boolean }) =>
+    request<T>(path, { method: 'POST', body: JSON.stringify(body) }, opts),
 
   patch: <T>(path: string, body: unknown) =>
     request<T>(path, { method: 'PATCH', body: JSON.stringify(body) }),
