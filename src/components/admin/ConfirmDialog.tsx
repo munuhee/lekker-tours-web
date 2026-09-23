@@ -7,7 +7,7 @@ import { Modal } from './Modal';
  * Replaces window.confirm for destructive admin actions.
  *
  * The native dialog is unstyled, cannot name the item being destroyed in any
- * readable way, and — on the enquiries page — opened on top of an already-open
+ * readable way, and, on the enquiries page, opened on top of an already-open
  * modal. This reuses the focus-trapping Modal, so Escape, tab containment and
  * focus restoration all behave.
  */

@@ -98,7 +98,7 @@ export function BookingForm({ tourId, tourTitle, priceFrom, currency }: BookingF
             {(
               [
                 ['adults', 'Adults', '12+'],
-                ['children', 'Children', '2–11'],
+                ['children', 'Children', '2-11'],
                 ['infants', 'Infants', 'Under 2'],
               ] as const
             ).map(([key, label, hint]) => (

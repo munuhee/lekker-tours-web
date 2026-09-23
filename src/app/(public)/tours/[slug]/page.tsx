@@ -142,7 +142,7 @@ export default async function TourDetailPage({ params }: { params: Params }) {
                 </p>
                 <p>
                   Deposits are generally refundable up to a defined point before travel, after which
-                  charges apply. Gorilla permits are the exception — the parks themselves do not
+                  charges apply. Gorilla permits are the exception: the parks themselves do not
                   refund them once issued.
                 </p>
                 <p className="text-xs">

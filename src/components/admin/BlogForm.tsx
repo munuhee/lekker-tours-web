@@ -189,8 +189,8 @@ export function BlogForm({ post }: { post?: BlogPost }) {
           value={status}
           onChange={(v) => setStatus(v as BlogPost['status'])}
           options={[
-            { value: 'draft', label: 'Draft — hidden from the Journal' },
-            { value: 'published', label: 'Published — live' },
+            { value: 'draft', label: 'Draft: hidden from the Journal' },
+            { value: 'published', label: 'Published: live' },
           ]}
         />
         <CheckboxField label="Featured" checked={featured} onChange={setFeatured} />

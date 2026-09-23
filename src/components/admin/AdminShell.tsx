@@ -10,7 +10,7 @@ import type { AdminUser } from '@/lib/auth';
 /**
  * `needs` is the permission required to see the entry. Entries without one are
  * shown to everyone who can reach the dashboard at all. Hiding a link is a
- * convenience, not the control — every route is enforced by the API.
+ * convenience, not the control: every route is enforced by the API.
  */
 const NAV = [
   { href: '/admin', label: 'Dashboard', exact: true },
@@ -32,7 +32,7 @@ export function AdminShell({
   children,
 }: {
   admin: AdminUser | null;
-  /** Enquiries unassigned or past their follow-up date — work, not unread mail. */
+  /** Enquiries unassigned or past their follow-up date, work, not unread mail. */
   attentionCount?: number;
   children: React.ReactNode;
 }) {
@@ -77,7 +77,7 @@ export function AdminShell({
 
   /**
    * Only leave once the server has actually cleared the cookie. Pretending to
-   * sign out while the session is still live is worse than showing an error —
+   * sign out while the session is still live is worse than showing an error,
    * on a shared machine the next person can navigate straight back in.
    */
   async function logout() {

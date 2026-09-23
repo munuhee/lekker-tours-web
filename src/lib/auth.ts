@@ -11,7 +11,7 @@ export interface AdminUser {
   role: 'admin' | 'editor';
   /** Name of the assigned role, or null for an account predating the roles table. */
   roleName?: string | null;
-  /** Resolved permission strings — what the dashboard shows is driven by these. */
+  /** Resolved permission strings: what the dashboard shows is driven by these. */
   permissions?: string[];
   lastLoginAt?: string;
 }
@@ -25,7 +25,7 @@ export function can(admin: AdminUser | null, ...required: string[]): boolean {
 
 /**
  * Server-side session check. Forwards the httpOnly cookie to Express, which is
- * the only place the JWT is verified — the web app never decodes it itself.
+ * the only place the JWT is verified; the web app never decodes it itself.
  *
  * Next 15: cookies() is async.
  */

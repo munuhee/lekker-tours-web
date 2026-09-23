@@ -5,7 +5,7 @@ import type { ReactNode } from 'react';
  * over it.
  *
  * `bg-fixed` is ignored or janky on iOS Safari and some Android browsers, so
- * the image is also set as a normal cover background — the section still looks
+ * the image is also set as a normal cover background, so the section still looks
  * right there, it simply scrolls with the page. Under prefers-reduced-motion
  * the fixed attachment is disabled in globals.css.
  *

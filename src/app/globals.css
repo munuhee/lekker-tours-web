@@ -114,7 +114,7 @@
   }
 
   /* Fixed-attachment photographic backgrounds. Only applied on pointer devices
-     with a large enough viewport — mobile browsers handle it poorly. */
+     with a large enough viewport, mobile browsers handle it poorly. */
   @media (min-width: 768px) {
     .parallax-section {
       background-attachment: fixed;

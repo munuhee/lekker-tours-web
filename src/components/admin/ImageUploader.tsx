@@ -21,7 +21,7 @@ function formatBytes(bytes: number): string {
 
 /**
  * Accepts a dropped or chosen file, or a path already in the repo (/images/…).
- * Alt text is required — it is what screen readers announce and what appears if
+ * Alt text is required: it is what screen readers announce and what appears if
  * an image fails to load.
  *
  * The drop zone is the primary affordance: this used to lead with a raw URL
@@ -53,7 +53,7 @@ export function ImageUploader({
   const fileRef = useRef<HTMLInputElement>(null);
 
   // Files this component uploaded in this session. Only these are safe to
-  // delete from disk — a URL typed by hand may be shared by other documents.
+  // delete from disk: a URL typed by hand may be shared by other documents.
   const [ownUploads, setOwnUploads] = useState<string[]>([]);
 
   /** Best-effort cleanup so replaced images do not accumulate on disk. */
@@ -76,7 +76,7 @@ export function ImageUploader({
     }
     if (file.size > MAX_BYTES) {
       setError(
-        `That image is ${formatBytes(file.size)}. The limit is ${formatBytes(MAX_BYTES)} — try exporting it smaller.`
+        `That image is ${formatBytes(file.size)}. The limit is ${formatBytes(MAX_BYTES)}. Try exporting it smaller.`
       );
       return;
     }
@@ -203,7 +203,7 @@ export function ImageUploader({
               Alt text {required ? '*' : null}
             </label>
             {/* Spread the existing value so editing one field never drops the
-                others — notably caption, which has no input of its own here. */}
+                others, notably caption, which has no input of its own here. */}
             <input
               id={`${inputId}-alt`}
               type="text"

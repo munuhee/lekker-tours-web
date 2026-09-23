@@ -239,7 +239,7 @@ export function DataTable<T>({
                   {detailCols.map((col) => (
                     <div key={col.key} className="min-w-0">
                       <dt className="text-[0.625rem] uppercase tracking-wider text-muted">
-                        {col.header || '—'}
+                        {col.header || '–'}
                       </dt>
                       <dd className="mt-0.5">{col.render(row)}</dd>
                     </div>

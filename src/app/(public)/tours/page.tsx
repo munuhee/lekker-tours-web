@@ -12,7 +12,7 @@ import type { Tour } from '@/types';
 export const metadata: Metadata = {
   title: 'Safari Expeditions & Weekend Escapes',
   description:
-    'Browse every Lekker Tours expedition across Kenya, Tanzania, Uganda, Rwanda and Zanzibar — from 48-hour escapes to ten-day journeys.',
+    'Browse every Lekker Tours expedition across Kenya, Tanzania, Uganda, Rwanda and Zanzibar, from 48-hour escapes to ten-day journeys.',
 };
 
 // Next 15: searchParams is a Promise and must be awaited.

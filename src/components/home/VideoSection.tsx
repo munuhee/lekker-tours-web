@@ -4,7 +4,7 @@ import { SectionHeading } from '@/components/ui/SectionHeading';
  * Embedded film block.
  *
  * `youtubeId` comes from admin -> Site Settings. Until one is set, a styled
- * placeholder renders instead — deliberately NOT someone else's safari footage,
+ * placeholder renders instead, deliberately NOT someone else's safari footage,
  * which would misrepresent whose trip the viewer is watching.
  */
 export function VideoSection({ youtubeId }: { youtubeId?: string }) {
@@ -13,7 +13,7 @@ export function VideoSection({ youtubeId }: { youtubeId?: string }) {
       <div className="container-page">
         <SectionHeading
           eyebrow="Watch the journey"
-          title="See East Africa in motion."
+          title="View East Africa in motion."
           align="center"
         />
 

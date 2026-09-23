@@ -101,7 +101,7 @@ function AdminUsersView() {
 
     try {
       if (editing.id) {
-        // Only what changed — an absent password leaves the existing hash alone.
+        // Only what changed: an absent password leaves the existing hash alone.
         const body: Record<string, unknown> = {
           name: editing.name,
           email: editing.email,
@@ -197,9 +197,9 @@ function AdminUsersView() {
             {u.role.name}
           </span>
         ) : (
-          // roleId is nullable, and a null role grants nothing — worth saying
+          // roleId is nullable, and a null role grants nothing, so it is worth saying
           // plainly rather than showing an empty cell.
-          <span className="text-xs text-maroon-700">No role — cannot do anything</span>
+          <span className="text-xs text-maroon-700">No role: cannot do anything</span>
         ),
     },
     {

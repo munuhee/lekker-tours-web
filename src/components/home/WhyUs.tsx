@@ -47,7 +47,7 @@ export function WhyUs({
             </p>
             <p>
               We pair the classic wildlife circuits with the quieter corners most travellers never
-              reach — private conservancies, walking country, and camps where the only sound after
+              reach: private conservancies, walking country, and camps where the only sound after
               dark is the bush itself. Nothing is off the shelf.
             </p>
           </div>

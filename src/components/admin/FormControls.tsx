@@ -192,7 +192,7 @@ export function CheckboxField({
 }
 
 /**
- * Edits a string[] as one item per line — simpler than a repeater for short
+ * Edits a string[] as one item per line, simpler than a repeater for short
  * lists.
  *
  * The text is held locally while editing. Trimming and dropping blank lines on

@@ -8,7 +8,7 @@ import { getSettings } from '@/lib/settings';
 export const metadata: Metadata = {
   title: 'Our Services',
   description:
-    'Kenya safaris, holiday packages, custom tours, airport transfers, accommodation booking, group and corporate travel — coordinated through one dependable point of contact.',
+    'Kenya safaris, holiday packages, custom tours, airport transfers, accommodation booking, group and corporate travel, coordinated through one dependable point of contact.',
 };
 
 /**
@@ -54,7 +54,7 @@ const SERVICES = [
   },
 ];
 
-/** Section 05 — who we serve. */
+/** Section 05, who we serve. */
 const AUDIENCES = [
   {
     title: 'Individual Travellers',
@@ -82,7 +82,7 @@ const AUDIENCES = [
   },
 ];
 
-/** Section 07 — how we work. */
+/** Section 07, how we work. */
 const PROCESS = [
   {
     title: 'Tell Us Your Plan',
@@ -113,7 +113,7 @@ export default async function ServicesPage() {
     <>
       <PageBanner
         title="Our Services"
-        subtitle="Tours, safaris, holidays and travel services — planned and coordinated from Nairobi."
+        subtitle="Tours, safaris, holidays and travel services: planned and coordinated from Nairobi."
         image={{
           url: '/images/mara-herd-safari.jpg',
           alt: 'A safari vehicle watching a herd on the plains',

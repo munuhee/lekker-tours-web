@@ -20,7 +20,7 @@ import type { AdminSummary, Enquiry, EnquiryStatus, PageMeta } from '@/types';
 /**
  * The pipeline, in order. `won`/`lost` are terminal; everything before them is
  * live work. Labels differ from the stored values because "won"/"lost" are
- * internal words — staff think in terms of booked and closed.
+ * internal words: staff think in terms of booked and closed.
  */
 const PIPELINE: { value: EnquiryStatus; label: string }[] = [
   { value: 'new', label: 'New' },
@@ -35,7 +35,7 @@ const OPEN_STATUSES = 'new,assigned,in_progress,quoted';
 
 /**
  * Filters are ordered by how often they are the answer to "what should I do
- * next" — open work first, the full pipeline after, archives last.
+ * next": open work first, the full pipeline after, archives last.
  */
 const FILTERS: { value: string; label: string }[] = [
   { value: OPEN_STATUSES, label: 'Open' },
@@ -48,7 +48,7 @@ const SORTS = [
   { value: 'follow-up', label: 'Follow-up due' },
   { value: 'newest', label: 'Newest first' },
   { value: 'oldest', label: 'Oldest first' },
-  { value: 'name-asc', label: 'Name, A–Z' },
+  { value: 'name-asc', label: 'Name, A-Z' },
 ];
 
 const PER_PAGE = 25;
@@ -349,7 +349,7 @@ function AdminEnquiriesView() {
       header: 'Type',
       render: (e) => (
         <span className="text-xs text-muted">
-          {e.type === 'booking' ? `Booking · ${e.tourTitle ?? '—'}` : 'Contact'}
+          {e.type === 'booking' ? `Booking · ${e.tourTitle ?? '–'}` : 'Contact'}
         </span>
       ),
     },
@@ -768,7 +768,7 @@ function EnquiryDetail({
               />
               {enquiry.type === 'booking' ? (
                 <>
-                  <Row label="Tour" value={enquiry.tourTitle ?? '—'} />
+                  <Row label="Tour" value={enquiry.tourTitle ?? '–'} />
                   {enquiry.travelDate ? (
                     <Row label="Travel date" value={formatDate(enquiry.travelDate)} />
                   ) : null}

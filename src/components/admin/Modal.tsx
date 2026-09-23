@@ -16,7 +16,7 @@ const FOCUSABLE = [
  *
  * The admin dialogs previously set role="dialog" and aria-modal="true" but
  * implemented none of the behaviour those promise: focus was never moved in,
- * never trapped, never restored, and Escape did nothing — so keyboard and
+ * never trapped, never restored, and Escape did nothing, so keyboard and
  * screen-reader users tabbed straight out into the page behind the overlay.
  *
  * `as` lets a caller render the panel as a <form>, which the FAQ and

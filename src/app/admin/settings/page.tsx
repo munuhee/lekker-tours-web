@@ -11,7 +11,7 @@ import type { SiteSettings } from '@/types';
 
 /**
  * Mirrors the caps in api/src/validators/settings.validator.js. Enforcing them
- * in the inputs stops a long paste from failing the whole save — previously the
+ * in the inputs stops a long paste from failing the whole save, previously the
  * only feedback was a generic "correct the highlighted fields" with nothing
  * highlighted.
  */
@@ -41,7 +41,7 @@ const LIMITS = {
  * Takes whatever the admin pasted and returns a bare video ID.
  *
  * The API wants the 11-character ID, but the natural thing to paste is the URL
- * from the browser bar — in any of several shapes (watch?v=, youtu.be/, /embed/,
+ * from the browser bar, in any of several shapes (watch?v=, youtu.be/, /embed/,
  * /shorts/, with or without extra query parameters). Rather than reject those
  * and make the admin dissect a URL by hand, pull the ID out here. Anything that
  * is not recognisably a YouTube URL is passed through untouched so the server's
@@ -176,7 +176,7 @@ export default function AdminSettingsPage() {
       <header className="mb-7">
         <h1 className="text-3xl">Site settings</h1>
         <p className="mt-2 text-sm text-muted">
-          Everything here appears on the public site — the homepage hero, the values strip, the
+          Everything here appears on the public site: the homepage hero, the values strip, the
           contact block and the footer.
         </p>
       </header>

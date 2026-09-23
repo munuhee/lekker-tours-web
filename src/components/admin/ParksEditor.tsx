@@ -90,7 +90,7 @@ export function ParksEditor({
             type="text"
             value={park.bestTime ?? ''}
             onChange={(e) => update(i, { bestTime: e.target.value })}
-            placeholder="Best time, e.g. July – October"
+            placeholder="Best time, e.g. July - October"
             className="w-full rounded-lg border border-sand-300 px-3 py-2 text-sm focus:border-amber-500 focus:outline-none"
           />
 

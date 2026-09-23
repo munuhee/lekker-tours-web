@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
 /**
- * Keeps admin list state — page, search, filter, sort — in the URL.
+ * Keeps admin list state, page, search, filter, sort, in the URL.
  *
  * Previously these lived in component state, so editing a tour from page 3 and
  * pressing Back returned to page 1, and a filtered view could not be

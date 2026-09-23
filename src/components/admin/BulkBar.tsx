@@ -15,7 +15,7 @@ export function BulkBar({
   count: number;
   onClear: () => void;
   busy?: boolean;
-  /** The actions themselves — use <BulkButton>. */
+  /** The actions themselves; use <BulkButton>. */
   children: ReactNode;
 }) {
   if (count === 0) return null;

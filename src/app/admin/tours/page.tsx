@@ -67,7 +67,7 @@ function AdminToursView() {
     load();
   }, [load]);
 
-  // Rows that just left the view cannot stay selected — the bulk bar would
+  // Rows that just left the view cannot stay selected: the bulk bar would
   // claim a count covering things the admin can no longer see.
   useEffect(() => {
     setSelected((current) => {

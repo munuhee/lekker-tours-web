@@ -20,7 +20,7 @@ const PER_PAGE = 25;
 
 const SORTS = [
   { value: 'order-asc', label: 'Display order' },
-  { value: 'name-asc', label: 'Name, A–Z' },
+  { value: 'name-asc', label: 'Name, A-Z' },
   { value: 'newest', label: 'Newest' },
 ];
 

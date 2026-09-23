@@ -31,10 +31,10 @@ export function ListToolbar({
   sort?: string;
   sorts?: SortOption[];
   onSortChange?: (value: string) => void;
-  /** Rendered to the right of the search row — status chips, usually. */
+  /** Rendered to the right of the search row, status chips, usually. */
   filters?: React.ReactNode;
   busy?: boolean;
-  /** e.g. "12 results for “lions”" — announced when a search settles. */
+  /** e.g. "12 results for “lions”", announced when a search settles. */
   resultLabel?: string;
 }) {
   // The input is immediate; the committed value trails it so a request is not

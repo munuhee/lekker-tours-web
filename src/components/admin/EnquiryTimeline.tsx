@@ -4,7 +4,7 @@ import type { EnquiryEvent, EnquiryEventType } from '@/types';
 /**
  * The activity log for one enquiry, newest first.
  *
- * A marker per entry type carries most of the meaning at a glance — an admin
+ * A marker per entry type carries most of the meaning at a glance: an admin
  * scanning a long history is usually looking for "when did we last speak to
  * them", not reading every line.
  */

@@ -2,7 +2,7 @@ const STYLES: Record<string, string> = {
   published: 'bg-forest-100 text-forest-700',
   draft: 'bg-sand-200 text-muted',
 
-  // Enquiry pipeline, drawn from the site palette (globals.css) — amber for
+  // Enquiry pipeline, drawn from the site palette (globals.css): amber for
   // work waiting on us, deepening green as it advances, sand once it is done.
   // Amber on `new` is the only attention-grabbing tone, which is the point:
   // an unclaimed enquiry is the one state that needs someone to move.

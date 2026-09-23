@@ -2,7 +2,7 @@
   "name": "lekker-tours-web",
   "version": "1.0.0",
   "private": true,
-  "description": "Lekker Tours and Travel — public website and admin dashboard (Next.js 15, App Router).",
+  "description": "Lekker Tours and Travel: public website and admin dashboard (Next.js 15, App Router).",
   "scripts": {
     "dev": "next dev -p 3000",
     "build": "next build",

@@ -1,7 +1,7 @@
 # Image Credits
 
 All photographs in this directory are sourced from [Pexels](https://www.pexels.com) under the
-[Pexels License](https://www.pexels.com/license/) — free to use, no attribution legally required.
+[Pexels License](https://www.pexels.com/license/): free to use, no attribution legally required.
 Attribution is recorded here anyway as good practice and so each image can be traced to its source.
 
 Photos are downloaded at 1920px wide (`?auto=compress&cs=tinysrgb&w=1920`).
@@ -9,7 +9,7 @@ Source URL pattern: `https://images.pexels.com/photos/<id>/pexels-photo-<id>.jpe
 
 > **Note:** these are stock photographs chosen to match each destination's subject matter.
 > They are not photographs of Lekker Tours' own trips, camps, guides or guests.
-> Replace them with the company's own photography before launch where authenticity matters —
+> Replace them with the company's own photography before launch where authenticity matters,
 > particularly the lodge/camp images, which are generic and not of actual partner properties.
 
 | File | Pexels ID | Photographer | Source |

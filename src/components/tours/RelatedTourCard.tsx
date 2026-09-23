@@ -2,7 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import type { Tour } from '@/types';
 
-/** Compact card for the "You might also like" row — lighter than the main TourCard. */
+/** Compact card for the "You might also like" row, lighter than the main TourCard. */
 export function RelatedTourCard({ tour }: { tour: Tour }) {
   return (
     <article className="group overflow-hidden rounded-xl border border-sand-200 bg-white transition-all duration-500 ease-soft hover:-translate-y-1 hover:shadow-card">

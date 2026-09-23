@@ -7,7 +7,7 @@ import { formatDate } from '@/lib/format';
 import type { Enquiry, Tour } from '@/types';
 
 /**
- * `null` means the count could not be loaded — distinct from a real zero. A
+ * `null` means the count could not be loaded, distinct from a real zero. A
  * dead API used to render a confident "0 Tours, 0 Enquiries", which reads as
  * data loss rather than a connection problem.
  */
@@ -184,7 +184,7 @@ export default async function AdminDashboardPage() {
           role="alert"
           className="mb-5 rounded-lg bg-maroon-600/10 px-4 py-3 text-sm text-maroon-700"
         >
-          Some counts could not be loaded — the API may be unreachable. Figures shown as “—”
+          Some counts could not be loaded. The API may be unreachable. Figures shown as “–”
           are unknown, not zero.
         </p>
       ) : null}
@@ -216,7 +216,7 @@ export default async function AdminDashboardPage() {
             <p className="mt-2 font-display text-4xl text-forest-900">
               {card.value === null ? (
                 <span className="text-sand-300" title="Could not load">
-                  —
+                  –
                 </span>
               ) : (
                 card.value
@@ -255,7 +255,7 @@ export default async function AdminDashboardPage() {
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">{e.name}</p>
                       <p className="truncate text-xs text-muted">
-                        {e.type === 'booking' ? `Booking · ${e.tourTitle ?? '—'}` : 'Contact'} ·{' '}
+                        {e.type === 'booking' ? `Booking · ${e.tourTitle ?? '–'}` : 'Contact'} ·{' '}
                         {formatDate(e.createdAt)}
                       </p>
                     </div>
@@ -277,7 +277,7 @@ export default async function AdminDashboardPage() {
 
           {counts.recentTours.length === 0 ? (
             <p className="py-6 text-center text-sm text-muted">
-              No unpublished tours — everything you have written is live.
+              No unpublished tours: everything you have written is live.
             </p>
           ) : (
             <ul className="divide-y divide-sand-100">

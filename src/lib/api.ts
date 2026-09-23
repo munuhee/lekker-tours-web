@@ -27,7 +27,7 @@ interface FetchOptions {
 
 /**
  * Next 15 does NOT cache fetch by default, so every public read passes an
- * explicit `next: { revalidate, tags }` — otherwise each render hits Express.
+ * explicit `next: { revalidate, tags }`; otherwise each render hits Express.
  */
 async function request<T>(path: string, options: FetchOptions = {}): Promise<ApiSuccess<T>> {
   const { tags, revalidate = DEFAULT_REVALIDATE, method = 'GET', body, cookie } = options;
@@ -75,7 +75,7 @@ async function request<T>(path: string, options: FetchOptions = {}): Promise<Api
   return payload as ApiSuccess<T>;
 }
 
-/** Returns data only — use when the caller does not need pagination meta. */
+/** Returns data only; use when the caller does not need pagination meta. */
 export async function apiGet<T>(path: string, options?: FetchOptions): Promise<T> {
   const { data } = await request<T>(path, options);
   return data;

@@ -14,7 +14,7 @@ import type { Destination } from '@/types';
 export const metadata: Metadata = {
   title: 'Destinations across East Africa',
   description:
-    'Kenya, Tanzania, Uganda, Rwanda and Zanzibar — the parks, reserves and coastlines we travel, and when to visit each.',
+    'Kenya, Tanzania, Uganda, Rwanda and Zanzibar: the parks, reserves and coastlines we travel, and when to visit each.',
 };
 
 export default async function DestinationsPage() {
@@ -37,7 +37,7 @@ export default async function DestinationsPage() {
         ]}
       />
 
-      {/* Country feature row — the five countries as large overlaid cards. */}
+      {/* Country feature row: the five countries as large overlaid cards. */}
       <section className="bg-sand-50 py-12 sm:py-16 md:py-24">
         <div className="container-page">
           <SectionHeading

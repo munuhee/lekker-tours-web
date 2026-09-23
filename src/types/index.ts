@@ -307,7 +307,7 @@ export interface AuditEntry {
   createdAt: string;
 }
 
-/** Shape returned by /api/auth/me — drives what the dashboard shows. */
+/** Shape returned by /api/auth/me, drives what the dashboard shows. */
 export interface CurrentAdmin {
   _id: string;
   id: string;

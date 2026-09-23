@@ -37,7 +37,7 @@ function formatWhen(value: string) {
 
 /**
  * Renders the { before, after } diff as readable lines. Permission arrays are
- * summarised by count — a role edit can move thirty of them at once, and the
+ * summarised by count: a role edit can move thirty of them at once, and the
  * full list would bury everything else.
  */
 function summarise(changes: AuditEntry['changes']) {
@@ -125,7 +125,7 @@ function AuditView() {
         return text ? (
           <span className="text-xs text-muted">{text}</span>
         ) : (
-          <span className="text-xs text-muted">—</span>
+          <span className="text-xs text-muted">–</span>
         );
       },
     },

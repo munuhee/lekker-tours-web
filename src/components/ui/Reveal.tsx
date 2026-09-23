@@ -22,7 +22,7 @@ export function Reveal({
     const el = ref.current;
     if (!el) return;
 
-    // No IntersectionObserver (or reduced motion) — show immediately.
+    // No IntersectionObserver (or reduced motion), show immediately.
     if (typeof IntersectionObserver === 'undefined') {
       setVisible(true);
       return;

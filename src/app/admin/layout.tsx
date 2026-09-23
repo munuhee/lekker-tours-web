@@ -10,17 +10,17 @@ import { API_URL } from '@/lib/api';
  * robots.ts.
  */
 export const metadata: Metadata = {
-  title: 'Admin — Lekker Tours',
+  title: 'Admin: Lekker Tours',
   robots: { index: false, follow: false, nocache: true },
 };
 
 /**
  * Drives the nav badge: enquiries nobody has picked up, plus any that are past
  * their follow-up date. This counts work outstanding rather than mail unopened
- * — the old "unread" number went to zero the moment someone glanced at a row,
+ * the old "unread" number went to zero the moment someone glanced at a row,
  * which said nothing about whether the customer had been answered.
  *
- * A failure returns 0 rather than throwing — a missing badge is a smaller
+ * A failure returns 0 rather than throwing: a missing badge is a smaller
  * problem than an admin area that will not render.
  */
 async function loadAttentionCount(cookie?: string): Promise<number> {

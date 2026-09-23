@@ -16,7 +16,7 @@ type Tab = 'book' | 'enquiry';
 
 /**
  * Sticky sidebar card with BOOK / ENQUIRY tabs. Both submit to the same
- * enquiries endpoint — no payment is taken here, so "Book now" opens a
+ * enquiries endpoint: no payment is taken here, so "Book now" opens a
  * request rather than a transaction.
  */
 export function BookingCard({ tourId, tourTitle, priceFrom, currency, phone }: BookingCardProps) {
@@ -143,7 +143,7 @@ export function BookingCard({ tourId, tourTitle, priceFrom, currency, phone }: B
                 {(
                   [
                     ['adults', 'Adults', 'Age 13+'],
-                    ['children', 'Children', 'Age 2–12'],
+                    ['children', 'Children', 'Age 2-12'],
                     ['infants', 'Infants', 'Under 2'],
                   ] as const
                 ).map(([key, label, hint]) => (

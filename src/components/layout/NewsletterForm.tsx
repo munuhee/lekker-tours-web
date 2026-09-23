@@ -33,7 +33,7 @@ export function NewsletterForm() {
       }
 
       setState('done');
-      setMessage('Thank you — we will be in touch.');
+      setMessage('Thank you, we will be in touch.');
       setEmail('');
     } catch (err) {
       setState('error');

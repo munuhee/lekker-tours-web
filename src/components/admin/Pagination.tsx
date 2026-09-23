@@ -3,7 +3,7 @@
 import type { PageMeta } from '@/types';
 
 /**
- * Every admin list used to request ?limit=100 — the validator's ceiling — and
+ * Every admin list used to request ?limit=100, the validator's ceiling, and
  * render whatever came back, so past 100 records older rows simply vanished
  * with no indication anything was missing. The API has always returned full
  * page meta; this surfaces it.
@@ -39,7 +39,7 @@ export function Pagination({
       className="mt-4 flex flex-wrap items-center justify-between gap-3"
     >
       <p className="text-xs text-muted">
-        Showing {firstShown}–{lastShown} of {total}
+        Showing {firstShown}-{lastShown} of {total}
       </p>
 
       <div className="flex items-center gap-2">

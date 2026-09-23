@@ -7,7 +7,7 @@ const AUTH_COOKIE = 'lekker_admin_token';
  * signed out, so every other admin page rendered its full shell, fired its
  * fetches, and showed a row of 401 error banners instead of a login screen.
  *
- * This is a presence check on the cookie only — the JWT is verified by Express,
+ * This is a presence check on the cookie only; the JWT is verified by Express,
  * which stays the single source of truth. A forged or expired cookie gets past
  * here and is rejected by the API, which adminApi turns into a redirect back to
  * /admin/login.
@@ -27,7 +27,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Already signed in and sitting on the login page — send them inside.
+  // Already signed in and sitting on the login page, send them inside.
   if (signedIn && isLoginPage) {
     const url = request.nextUrl.clone();
     url.pathname = '/admin';

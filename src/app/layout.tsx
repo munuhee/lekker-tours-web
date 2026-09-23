@@ -17,7 +17,7 @@ const playfair = Playfair_Display({
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'),
   title: {
-    default: 'Lekker Tours and Travel — Safari Expeditions across East Africa',
+    default: 'Lekker Tours and Travel: Safari Expeditions across East Africa',
     template: '%s | Lekker Tours and Travel',
   },
   description:

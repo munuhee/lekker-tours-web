@@ -4,7 +4,7 @@ import type { Tour } from '@/types';
 export function TourInfoBoxes({ tour }: { tour: Tour }) {
   const boxes = [
     { icon: <ClockIcon />, label: 'Duration', value: `${tour.durationDays} Days` },
-    { icon: <UsersIcon />, label: 'Travellers', value: `0–${tour.groupSizeMax} guests` },
+    { icon: <UsersIcon />, label: 'Travellers', value: `0-${tour.groupSizeMax} guests` },
     {
       icon: <TagIcon />,
       label: 'Tour type',

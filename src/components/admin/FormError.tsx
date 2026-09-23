@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 
 /**
  * The admin forms are several screens tall and submit from a sticky footer
- * button, so an error banner rendered at the top appeared entirely offscreen —
+ * button, so an error banner rendered at the top appeared entirely offscreen,
  * pressing Save looked like it did nothing at all. This scrolls itself into
  * view and moves focus to the first invalid field, which also announces the
  * problem to screen readers.

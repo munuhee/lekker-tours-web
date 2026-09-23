@@ -277,8 +277,8 @@ export function DestinationForm({ destination }: { destination?: Destination }) 
           value={status}
           onChange={(v) => setStatus(v as Destination['status'])}
           options={[
-            { value: 'draft', label: 'Draft — hidden from the public site' },
-            { value: 'published', label: 'Published — live' },
+            { value: 'draft', label: 'Draft: hidden from the public site' },
+            { value: 'published', label: 'Published: live' },
           ]}
         />
         <div className="grid gap-4 sm:grid-cols-2">

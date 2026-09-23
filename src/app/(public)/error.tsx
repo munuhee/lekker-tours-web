@@ -20,7 +20,7 @@ export default function PublicError({
         <p className="mb-4 text-xs uppercase tracking-[0.28em] text-amber-600">Something went wrong</p>
         <h1 className="mb-4 text-3xl">We lost the trail</h1>
         <p className="mb-8 text-sm leading-relaxed text-muted">
-          This page could not be loaded. It is usually temporary — please try again, or get in touch
+          This page could not be loaded. It is usually temporary. Please try again, or get in touch
           if it keeps happening.
         </p>
         <div className="flex flex-col justify-center gap-3 sm:flex-row">

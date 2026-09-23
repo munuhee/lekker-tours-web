@@ -341,7 +341,7 @@ export function TourForm({
             value={form.destination}
             onChange={(v) => set('destination', v)}
             options={[
-              { value: '', label: '— none —' },
+              { value: '', label: '(none)' },
               ...destinations.map((d) => ({ value: d._id, label: d.name })),
             ]}
           />
@@ -433,8 +433,8 @@ export function TourForm({
           value={form.status}
           onChange={(v) => set('status', v)}
           options={[
-            { value: 'draft', label: 'Draft — hidden from the public site' },
-            { value: 'published', label: 'Published — live' },
+            { value: 'draft', label: 'Draft: hidden from the public site' },
+            { value: 'published', label: 'Published: live' },
           ]}
         />
         <CheckboxField

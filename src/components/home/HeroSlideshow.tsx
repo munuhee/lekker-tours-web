@@ -10,7 +10,7 @@ import Image from 'next/image';
  * rest load lazily. Rotation stops entirely under prefers-reduced-motion, and
  * pauses while the tab is hidden so it is not animating off-screen.
  *
- * No visible controls — the images are decorative and carry no information the
+ * No visible controls: the images are decorative and carry no information the
  * copy does not already state.
  */
 export function HeroSlideshow({

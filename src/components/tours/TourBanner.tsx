@@ -44,7 +44,7 @@ export function TourBanner({ tour, country }: { tour: Tour; country?: string | n
           </li>
           <li className="inline-flex items-center gap-1.5">
             <UsersIcon />
-            0–{tour.groupSizeMax} guests
+            0-{tour.groupSizeMax} guests
           </li>
           {tour.parks?.length ? (
             <li className="inline-flex items-center gap-1.5">

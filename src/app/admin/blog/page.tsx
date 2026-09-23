@@ -22,7 +22,7 @@ const PER_PAGE = 25;
 const SORTS = [
   { value: 'newest', label: 'Newest first' },
   { value: 'oldest', label: 'Oldest first' },
-  { value: 'title-asc', label: 'Title, A–Z' },
+  { value: 'title-asc', label: 'Title, A-Z' },
 ];
 
 function AdminBlogView() {

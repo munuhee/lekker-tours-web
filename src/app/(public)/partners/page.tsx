@@ -43,7 +43,7 @@ const PARTNERS = [
   },
 ];
 
-/** Section 09 — service standards. */
+/** Section 09, service standards. */
 const STANDARDS = [
   {
     title: 'Clarity',

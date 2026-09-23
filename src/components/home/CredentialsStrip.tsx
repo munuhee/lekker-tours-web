@@ -2,7 +2,7 @@
  * Sits between the hero and the "why us" block.
  *
  * NOTE: these are plain descriptive claims, deliberately NOT trade-body or
- * review-platform logos — those would assert accreditations Lekker may not
+ * review-platform logos: those would assert accreditations Lekker may not
  * hold. For the same reason there is no "licensed operator" line: the company
  * profile lists the TRA licence as still to be confirmed. Add it here once the
  * licence number is in hand.

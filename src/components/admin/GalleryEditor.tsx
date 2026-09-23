@@ -29,7 +29,7 @@ export function GalleryEditor({
    * One key per slot, held in state and reordered alongside the images.
    *
    * Keying by array index meant removing the second image shuffled every later
-   * image's component state onto its neighbour — the third image's alt text
+   * image's component state onto its neighbour: the third image's alt text
    * would appear under the fourth. Keys move with their image instead.
    */
   const [keys, setKeys] = useState<string[]>(() => value.map(makeKey));

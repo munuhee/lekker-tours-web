@@ -5,8 +5,8 @@ import { useEffect } from 'react';
 /**
  * Warns before the browser discards unsaved edits.
  *
- * The admin forms are long — a tour carries an itinerary, a gallery and four
- * list fields — and a misclick used to throw all of it away silently.
+ * The admin forms are long: a tour carries an itinerary, a gallery and four
+ * list fields, and a misclick used to throw all of it away silently.
  *
  * This covers reloads, tab closes and external navigation, which is what
  * beforeunload can intercept. In-app <Link> clicks are handled separately by
@@ -54,7 +54,7 @@ export function useNavigationGuard(
       if (!href || !href.startsWith('/')) return;
       if (anchor.target && anchor.target !== '_self') return;
 
-      // Same page — nothing to lose.
+      // Same page, nothing to lose.
       if (href === window.location.pathname) return;
 
       if (!window.confirm(message)) {
@@ -68,7 +68,7 @@ export function useNavigationGuard(
   }, [dirty, message]);
 }
 
-/** Both guards together — what the forms actually want. */
+/** Both guards together, what the forms actually want. */
 export function useUnsavedChangesGuard(dirty: boolean) {
   useUnsavedChanges(dirty);
   useNavigationGuard(dirty);

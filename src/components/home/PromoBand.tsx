@@ -3,7 +3,7 @@ import { ParallaxSection } from '@/components/ui/ParallaxSection';
 
 /**
  * Full-bleed promotional band between the countries grid and traveller
- * stories. Copy is generic on purpose — no dates or prices are asserted that
+ * stories. Copy is generic on purpose: no dates or prices are asserted that
  * Lekker has not set.
  */
 export function PromoBand() {

@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 };
 
 /**
- * Section 06 of the company profile — "Why Lekker". Deliberately claims only
+ * Section 06 of the company profile, "Why Lekker". Deliberately claims only
  * what the profile claims: no fleet sizes, guide headcounts or years in
  * operation, none of which have been confirmed.
  */
@@ -208,7 +208,7 @@ export default async function AboutPage() {
         <div className="container-page text-center">
           <h2 className="mx-auto max-w-2xl text-3xl text-sand-50">Ready when you are</h2>
           <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-sand-200/75">
-            {settings.contact.supportHours} — from the first enquiry to the final sunset of your
+            {settings.contact.supportHours}, from the first enquiry to the final sunset of your
             tour.
           </p>
           <div className="mt-8">
