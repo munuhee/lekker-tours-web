@@ -138,3 +138,21 @@
     background-attachment: scroll !important;
   }
 }
+
+/*
+ * Chrome paints autofilled inputs with its own near-white background and dark
+ * text, which is unreadable on the dark admin forms and hid the password
+ * reveal control entirely. The background cannot be set directly on an
+ * autofilled field, so cover it with an inset shadow and keep the caret and
+ * text in the theme's colours.
+ */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-text-fill-color: var(--color-sand-50);
+  -webkit-box-shadow: 0 0 0 100px var(--color-forest-950) inset;
+  box-shadow: 0 0 0 100px var(--color-forest-950) inset;
+  caret-color: var(--color-sand-50);
+  transition: background-color 9999s ease-in-out 0s;
+}

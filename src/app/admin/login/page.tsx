@@ -128,7 +128,7 @@ function AdminLoginForm() {
                 type={showPassword ? 'text' : 'password'}
                 required
                 autoComplete="current-password"
-                className="h-11 w-full rounded-lg border border-white/15 bg-forest-950 pl-4 pr-11 text-sm text-sand-50 focus:border-amber-500 focus:outline-none"
+                className="h-11 w-full rounded-lg border border-white/15 bg-forest-950 pl-4 pr-24 text-sm text-sand-50 focus:border-amber-500 focus:outline-none"
               />
               <button
                 type="button"
@@ -139,9 +139,10 @@ function AdminLoginForm() {
                 tabIndex={-1}
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
                 aria-pressed={showPassword}
-                className="absolute right-1 top-1 flex h-9 w-9 items-center justify-center rounded-md text-sand-200/60 transition-colors hover:text-sand-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+                className="absolute right-1.5 top-1.5 flex h-8 items-center gap-1.5 rounded-md px-2 text-xs font-medium uppercase tracking-wide text-amber-500 transition-colors hover:bg-amber-500/10 hover:text-amber-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
               >
                 {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+                {showPassword ? 'Hide' : 'Show'}
               </button>
             </div>
           </div>
