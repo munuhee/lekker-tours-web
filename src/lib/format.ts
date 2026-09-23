@@ -24,7 +24,7 @@ export function formatDuration(days: number, nights?: number): string {
   return `${days} days / ${n} nights`;
 }
 
-/** "+254 100 201 950" -> "+254100201950", for tel: and wa.me links. */
+/** "+254 182 308 871" -> "+254182308871", for tel: and wa.me links. */
 export function telHref(phone: string): string {
   return phone.replace(/[^\d+]/g, '');
 }

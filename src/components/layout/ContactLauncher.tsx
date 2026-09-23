@@ -92,11 +92,10 @@ export function ContactLauncher({ phone }: { phone: string }) {
     s.async = true;
     s.src = TAWK_SRC;
     s.charset = 'UTF-8';
-    // Tawk's snippet uses crossorigin="*", which is not a valid value for the
-    // attribute; browsers treat anything invalid as "anonymous", so spell that
-    // out rather than relying on the fallback. The CDN serves the script with
-    // Access-Control-Allow-Origin: *, which anonymous mode accepts.
-    s.setAttribute('crossorigin', 'anonymous');
+    // Verbatim from Tawk's published snippet. "*" is not one of the two valid
+    // values for the attribute, so browsers fall back to "anonymous", which is
+    // the mode the CDN's Access-Control-Allow-Origin: * satisfies anyway.
+    s.setAttribute('crossorigin', '*');
     s.onerror = () => {
       // Blocked by an extension, a privacy blocker or a dead connection. Reset
       // so a later click retries, and fall back to WhatsApp rather than
@@ -106,15 +105,26 @@ export function ContactLauncher({ phone }: { phone: string }) {
       window.open(whatsappHref(phone), '_blank', 'noopener,noreferrer');
     };
 
+    // Inserted before the first <script> exactly as Tawk's snippet does, rather
+    // than appended to <body>.
+    const insert = () => {
+      const s0 = document.getElementsByTagName('script')[0];
+      if (s0?.parentNode) {
+        s0.parentNode.insertBefore(s, s0);
+      } else {
+        document.body.appendChild(s);
+      }
+    };
+
     // Tawk's bootstrap only inserts its second-stage bundle when the document
     // is already complete or once `load` fires. A click almost always happens
     // after that, but a click during loading would otherwise leave the embed
     // inert, so wait for `load` in that case instead of injecting into a
     // document that will never re-fire it.
     if (document.readyState === 'complete') {
-      document.body.appendChild(s);
+      insert();
     } else {
-      window.addEventListener('load', () => document.body.appendChild(s), { once: true });
+      window.addEventListener('load', insert, { once: true });
     }
   }, [phone]);
 

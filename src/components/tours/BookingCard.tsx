@@ -130,7 +130,7 @@ export function BookingCard({ tourId, tourTitle, priceFrom, currency, phone }: B
             label="Phone number"
             name="phone"
             type="tel"
-            placeholder="+254 734 567 890"
+            placeholder="+254 712 345 678"
             error={fieldErrors.phone}
           />
 

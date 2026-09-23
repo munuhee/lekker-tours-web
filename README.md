@@ -124,7 +124,7 @@ Taken from lekkertours.com, their real published content:
 - Taglines: "Feel the Pulse of the African Wilderness", "Witness the Theater of Nature",
   "The Wild, Within Reach"
 - Company values, the footer description, and the contact block
-  (+254 100 201 950 · lekkertours@gmail.com · Agip House, Haile Selassie Avenue,
+  (+254 182 308 871 · +254 182 308 872 · lekkertours@gmail.com · Agip House, Haile Selassie Avenue,
   P.O Box 13689-00200, Nairobi)
 
 **Written for this site, not by Lekker Tours, review before it faces customers:**
