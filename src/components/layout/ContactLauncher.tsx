@@ -92,15 +92,30 @@ export function ContactLauncher({ phone }: { phone: string }) {
     s.async = true;
     s.src = TAWK_SRC;
     s.charset = 'UTF-8';
-    s.setAttribute('crossorigin', '*');
+    // Tawk's snippet uses crossorigin="*", which is not a valid value for the
+    // attribute; browsers treat anything invalid as "anonymous", so spell that
+    // out rather than relying on the fallback. The CDN serves the script with
+    // Access-Control-Allow-Origin: *, which anonymous mode accepts.
+    s.setAttribute('crossorigin', 'anonymous');
     s.onerror = () => {
-      // Blocked by an extension or offline. Reset so a retry re-attempts,
-      // and fall back to WhatsApp rather than leaving a dead button.
+      // Blocked by an extension, a privacy blocker or a dead connection. Reset
+      // so a later click retries, and fall back to WhatsApp rather than
+      // leaving a dead button.
       loadState.current = 'idle';
       setLoading(false);
       window.open(whatsappHref(phone), '_blank', 'noopener,noreferrer');
     };
-    document.body.appendChild(s);
+
+    // Tawk's bootstrap only inserts its second-stage bundle when the document
+    // is already complete or once `load` fires. A click almost always happens
+    // after that, but a click during loading would otherwise leave the embed
+    // inert, so wait for `load` in that case instead of injecting into a
+    // document that will never re-fire it.
+    if (document.readyState === 'complete') {
+      document.body.appendChild(s);
+    } else {
+      window.addEventListener('load', () => document.body.appendChild(s), { once: true });
+    }
   }, [phone]);
 
   const shellTransition = visible
