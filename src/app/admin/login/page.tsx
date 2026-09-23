@@ -30,8 +30,11 @@ function signInMessage(err: unknown): string {
   if (err.status === 401) {
     return 'That email and password do not match an account.';
   }
-  if (err.status === 400) {
-    return err.message || 'Enter a valid email address and password.';
+  // The API validates with 422 and puts the per-field reason in details,
+  // which is more specific than its generic "correct the highlighted fields".
+  if (err.status === 400 || err.status === 422) {
+    const field = err.details && Object.values(err.details)[0];
+    return field || err.message || 'Enter a valid email address and password.';
   }
   if (err.status >= 500) {
     return 'The server had a problem signing you in. Please try again shortly.';
