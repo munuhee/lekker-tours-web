@@ -1,7 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import type { SiteSettings } from '@/types';
-import { telHref, whatsappHref } from '@/lib/format';
+import { telHref, whatsappHref, secondaryNumber } from '@/lib/format';
 import { NewsletterForm } from './NewsletterForm';
 
 const EXPLORE = [
@@ -25,6 +25,7 @@ const SOCIAL_LABELS: Record<string, string> = {
 
 export function Footer({ settings }: { settings: SiteSettings }) {
   const { contact, socials, newsletter, footerBlurb } = settings;
+  const secondNumber = secondaryNumber(contact.phone, contact.whatsapp);
   const year = new Date().getFullYear();
   const activeSocials = Object.entries(socials ?? {}).filter(([, url]) => Boolean(url));
 
@@ -72,10 +73,18 @@ export function Footer({ settings }: { settings: SiteSettings }) {
         <div>
           <h3 className="mb-5 text-sm uppercase tracking-[0.2em] text-sand-50">Get in touch</h3>
           <address className="space-y-3 text-sm not-italic text-sand-200/70">
-            <p>
-              <a href={`tel:${telHref(contact.phone)}`} className="transition-colors hover:text-amber-400">
+            <p className="space-y-1">
+              <a href={`tel:${telHref(contact.phone)}`} className="block transition-colors hover:text-amber-400">
                 {contact.phone}
               </a>
+              {secondNumber ? (
+                <a
+                  href={`tel:${telHref(secondNumber)}`}
+                  className="block transition-colors hover:text-amber-400"
+                >
+                  {secondNumber}
+                </a>
+              ) : null}
             </p>
             <p>
               <a href={`mailto:${contact.email}`} className="transition-colors hover:text-amber-400">

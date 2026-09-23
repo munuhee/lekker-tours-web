@@ -32,3 +32,16 @@ export function telHref(phone: string): string {
 export function whatsappHref(phone: string): string {
   return `https://wa.me/${phone.replace(/[^\d]/g, '')}`;
 }
+
+/**
+ * The second contact number, or undefined when there is nothing extra to show.
+ *
+ * Compared on digits alone: the same number stored as "+254182308871" in one
+ * field and "+254 182 308 871" in the other is one number, and listing it twice
+ * looks like a mistake to a visitor.
+ */
+export function secondaryNumber(phone: string, whatsapp?: string): string | undefined {
+  if (!whatsapp) return undefined;
+  const digits = (v: string) => v.replace(/\D/g, '');
+  return digits(whatsapp) === digits(phone) ? undefined : whatsapp;
+}

@@ -9,7 +9,7 @@ export default async function PublicLayout({ children }: { children: React.React
 
   return (
     <div className="flex min-h-screen flex-col">
-      <Header phone={settings.contact.phone} />
+      <Header phone={settings.contact.phone} whatsapp={settings.contact.whatsapp} />
       <main className="flex-1">{children}</main>
       <Footer settings={settings} />
       {whatsapp ? <ContactLauncher phone={whatsapp} /> : null}

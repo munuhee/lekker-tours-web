@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { telHref } from '@/lib/format';
+import { telHref, secondaryNumber } from '@/lib/format';
 
 const COUNTRIES = [
   { slug: 'kenya', label: 'Kenya' },
@@ -29,7 +29,8 @@ const NAV = [
  * A detached pill that floats over the hero: inset from the viewport edges,
  * fully rounded, translucent until the page scrolls.
  */
-export function Header({ phone }: { phone: string }) {
+export function Header({ phone, whatsapp }: { phone: string; whatsapp?: string }) {
+  const secondNumber = secondaryNumber(phone, whatsapp);
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const [menu, setMenu] = useState<string | null>(null);
@@ -190,7 +191,7 @@ export function Header({ phone }: { phone: string }) {
           <a
             href={`tel:${telHref(phone)}`}
             aria-label={`Call us on ${phone}`}
-            title={phone}
+            title={secondNumber ? `${phone} or ${secondNumber}` : phone}
             className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-forest-900 transition-all duration-300 hover:scale-105 hover:bg-amber-500 hover:text-forest-950 md:h-11 md:w-11"
           >
             <PhoneIcon />
@@ -254,11 +255,20 @@ export function Header({ phone }: { phone: string }) {
           ))}
           <a
             href={`tel:${telHref(phone)}`}
-            className="mt-3 inline-flex items-center gap-2 pb-2 text-sm text-amber-400"
+            className="mt-3 inline-flex items-center gap-2 text-sm text-amber-400"
           >
             <PhoneIcon />
             {phone}
           </a>
+          {secondNumber ? (
+            <a
+              href={`tel:${telHref(secondNumber)}`}
+              className="mt-1 inline-flex items-center gap-2 pb-2 text-sm text-amber-400"
+            >
+              <PhoneIcon />
+              {secondNumber}
+            </a>
+          ) : null}
         </nav>
       </div>
     </header>

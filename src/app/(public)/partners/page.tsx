@@ -4,6 +4,7 @@ import { SectionHeading } from '@/components/ui/SectionHeading';
 import { ButtonLink } from '@/components/ui/Button';
 import { Reveal } from '@/components/ui/Reveal';
 import { getSettings } from '@/lib/settings';
+import { secondaryNumber } from '@/lib/format';
 
 export const metadata: Metadata = {
   title: 'Partnerships',
@@ -69,6 +70,7 @@ const STANDARDS = [
 
 export default async function PartnersPage() {
   const settings = await getSettings();
+  const secondNumber = secondaryNumber(settings.contact.phone, settings.contact.whatsapp);
 
   return (
     <>
@@ -172,13 +174,21 @@ export default async function PartnersPage() {
               </div>
               <div className="flex gap-3">
                 <dt className="w-24 shrink-0 text-muted">Phone</dt>
-                <dd>
+                <dd className="space-y-1">
                   <a
                     href={`tel:${settings.contact.phone.replace(/[^\d+]/g, '')}`}
-                    className="transition-colors hover:text-amber-600"
+                    className="block transition-colors hover:text-amber-600"
                   >
                     {settings.contact.phone}
                   </a>
+                  {secondNumber ? (
+                    <a
+                      href={`tel:${secondNumber.replace(/[^\d+]/g, '')}`}
+                      className="block transition-colors hover:text-amber-600"
+                    >
+                      {secondNumber}
+                    </a>
+                  ) : null}
                 </dd>
               </div>
               <div className="flex gap-3">

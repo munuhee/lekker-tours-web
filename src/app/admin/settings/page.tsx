@@ -368,11 +368,12 @@ export default function AdminSettingsPage() {
           </button>
         </FormSection>
 
-        <FormSection title="Contact details" description="Used in the header, footer and contact page.">
+        <FormSection title="Contact details" description="Used in the header, footer and contact page. Both numbers are shown publicly when they differ.">
           <div className="grid gap-4 sm:grid-cols-2">
             <TextField
               label="Phone"
               name="phone"
+              hint="Primary number. Shown first everywhere."
               value={settings.contact.phone}
               maxLength={LIMITS.phone}
               error={fieldErrors['contact.phone']}
@@ -381,6 +382,7 @@ export default function AdminSettingsPage() {
             <TextField
               label="WhatsApp"
               name="whatsapp"
+              hint="Also listed as a second number, and used for WhatsApp links. Leave blank to show only the phone number."
               value={settings.contact.whatsapp ?? ''}
               maxLength={LIMITS.phone}
               error={fieldErrors['contact.whatsapp']}

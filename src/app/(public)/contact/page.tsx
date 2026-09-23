@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { PageBanner } from '@/components/ui/PageBanner';
 import { ContactForm } from '@/components/contact/ContactForm';
 import { getSettings } from '@/lib/settings';
-import { telHref, whatsappHref } from '@/lib/format';
+import { telHref, whatsappHref, secondaryNumber } from '@/lib/format';
 
 export const metadata: Metadata = {
   title: 'Start Your Journey',
@@ -12,6 +12,7 @@ export const metadata: Metadata = {
 
 export default async function ContactPage() {
   const { contact } = await getSettings();
+  const secondNumber = secondaryNumber(contact.phone, contact.whatsapp);
 
   return (
     <>
@@ -42,13 +43,23 @@ export default async function ContactPage() {
                   <dt className="mb-1 text-[0.65rem] uppercase tracking-[0.2em] text-amber-400">
                     Phone &amp; WhatsApp
                   </dt>
-                  <dd>
+                  <dd className="space-y-1">
                     <a
                       href={`tel:${telHref(contact.phone)}`}
-                      className="text-sand-50 transition-colors hover:text-amber-400"
+                      className="block text-sand-50 transition-colors hover:text-amber-400"
                     >
                       {contact.phone}
                     </a>
+                    {/* Second line only when WhatsApp is a different number, so a
+                        single-number setup does not render the same one twice. */}
+                    {secondNumber ? (
+                      <a
+                        href={`tel:${telHref(secondNumber)}`}
+                        className="block text-sand-50 transition-colors hover:text-amber-400"
+                      >
+                        {secondNumber}
+                      </a>
+                    ) : null}
                   </dd>
                 </div>
 
